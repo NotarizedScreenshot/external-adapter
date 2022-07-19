@@ -15,8 +15,11 @@
 		"dev:styles": "webpack --config webpack.config.js --watch"
 	},
 	"dependencies": {
+		"axios": "^0.27.2",
 		"busboy": "^1.6.0",
+		"crypto-js": "^4.1.1",
 		"express": "^4.18.1",
+		"json-bigint": "^1.0.0",
 		"nft.storage": "^6.4.0"
 	},
 	"devDependencies": {
