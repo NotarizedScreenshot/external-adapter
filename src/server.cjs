@@ -1,45 +1,54 @@
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const sha256 = require('crypto-js/sha256');
-const { NFTStorage, Blob } = require('nft.storage')
+const enchex = require('crypto-js/enc-hex');
+const CryptoJS = require('crypto-js');
+
+const {NFTStorage, Blob} = require('nft.storage')
 const NFT_STORAGE_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweDY3Y2NmMWU0OEU4NWViNzVFQzUzRmEzODU2NzZGOEVEM0Q2OWYxOWMiLCJpc3MiOiJuZnQtc3RvcmFnZSIsImlhdCI6MTY1NzcxMDM1NDA0OSwibmFtZSI6Im15a2V5In0.uem5KZz7-dLM4cgMoYgiBj9wwn4RV7hvhbvAtmrriQI';
-const client = new NFTStorage({ token: NFT_STORAGE_TOKEN });
+const client = new NFTStorage({token: NFT_STORAGE_TOKEN});
 const axios = require('axios');
+
 const server = express();
 server.use(cookieParser());
 server.use(express.static('public'));
 server.use(express.json());
-const JSONstrict = require('json-bigint')({ strict: true });
+
+const JSONstrict = require('json-bigint')({strict: true});
 
 JSON.parse = JSONstrict.parse;
 JSON.stringify = JSONstrict.stringify;
 
-function getBlobHeaders(url) { 
+function getBlobHeaders(url) {
   return axios({
-      url,
-      method: 'GET',
-      responseType: 'blob', // important
+    url,
+    method: 'GET',
+    responseType: 'arraybuffer', // important
   }).then((response) => {
-      console.log(response);
-      return {
-        blob: response.data,
-        headers: response.headers }
+    // console.log(response);
+    return {
+      blob: response.data,
+      headers: response.headers
+    }
   });
 
 };
 
 
 server.post('/adapter_response.json', (request, response) => {
-  console.log(request.body);
+  // console.log(request.body);
 
   console.log(request.body.data.sha256sum.toString(16));
-  
-  let promise = getBlobHeaders(request.body.data.url).then((blobHeaders)=>
-  {
-    console.log("blobHeaders", blobHeaders);
-    let hashBlob = sha256(blobHeaders.blob);
+
+  let promise = getBlobHeaders(request.body.data.url).then((blobHeaders) => {
+    console.log("blob base64     --------------------------------------------------------------------------------------")
+    console.log(new Buffer(blobHeaders.blob).toString('base64'));
+    var wa = CryptoJS.lib.WordArray.create(blobHeaders.blob);
+    let hashBlob = sha256(wa);
+    console.log("blob sha256sum  --------------------------------------------------------------------------------------")
+    console.log(hashBlob);
+    console.log(enchex.stringify(hashBlob));
   });
-  
 
 
   response.writeHead(204, {'Content-Type': 'application/json'});
