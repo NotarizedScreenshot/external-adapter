@@ -1,10 +1,12 @@
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const sha256 = require('crypto-js/sha256');
+
 const enchex = require('crypto-js/enc-hex');
 const CryptoJS = require('crypto-js');
 
 const {NFTStorage, Blob} = require('nft.storage')
+
 const NFT_STORAGE_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkaWQ6ZXRocjoweDY3Y2NmMWU0OEU4NWViNzVFQzUzRmEzODU2NzZGOEVEM0Q2OWYxOWMiLCJpc3MiOiJuZnQtc3RvcmFnZSIsImlhdCI6MTY1NzcxMDM1NDA0OSwibmFtZSI6Im15a2V5In0.uem5KZz7-dLM4cgMoYgiBj9wwn4RV7hvhbvAtmrriQI';
 const client = new NFTStorage({token: NFT_STORAGE_TOKEN});
 const axios = require('axios');
@@ -25,9 +27,9 @@ function getBlobHeaders(url) {
     method: 'GET',
     responseType: 'arraybuffer', // important
   }).then((response) => {
-    // console.log(response);
+  console.log(response);
     return {
-      blob: response.data,
+      blob: CryptoJS.lib.WordArray.create(response.data),
       headers: response.headers
     }
   });
@@ -36,23 +38,40 @@ function getBlobHeaders(url) {
 
 
 server.post('/adapter_response.json', (request, response) => {
-  // console.log(request.body);
+  console.log(request.body);
 
   console.log(request.body.data.sha256sum.toString(16));
 
-  let promise = getBlobHeaders(request.body.data.url).then((blobHeaders) => {
-    console.log("blob base64     --------------------------------------------------------------------------------------")
-    console.log(new Buffer(blobHeaders.blob).toString('base64'));
-    var wa = CryptoJS.lib.WordArray.create(blobHeaders.blob);
-    let hashBlob = sha256(wa);
-    console.log("blob sha256sum  --------------------------------------------------------------------------------------")
-    console.log(hashBlob);
-    console.log(enchex.stringify(hashBlob));
+  let promiseGetBlobHeaders = getBlobHeaders(request.body.data.url).then((blobHeaders) => {
+    let trustedSha256sum = sha256(blobHeaders.blob);
+    console.log("hashBlob", enchex.stringify(trustedSha256sum));
+
+    if (request.body.data.sha256sum.toString(16) != enchex.stringify(trustedSha256sum))  {
+      return Promise.reject("Client sent untrusted file");
+    }
+    return {
+      blob: blobHeaders.blob,
+      headers: response.headers,
+      trustedSha256sum
+    }
+    
+  });
+
+  let promisePutToStorage = promiseGetBlobHeaders.then((result)=>{
+    return result;
   });
 
 
-  response.writeHead(204, {'Content-Type': 'application/json'});
-  response.end();
+  let promiseMint = promisePutToStorage.then((result) => {
+    return result;
+  });
+
+  promiseMint.then((result) => {
+    response.json({
+      cib : result.trustedSha256sum
+    });
+  })
+  
 });
 
 
