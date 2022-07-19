@@ -40,15 +40,11 @@ function getBlobHeaders(url) {
 server.post('/adapter_response.json', (request, response) => {
   console.log(request.body);
 
-  console.log(request.body.data.sha256sum.toString(16));
 
   let promiseGetBlobHeaders = getBlobHeaders(request.body.data.url).then((blobHeaders) => {
-    let trustedSha256sum = sha256(blobHeaders.blob);
-    console.log("hashBlob", enchex.stringify(trustedSha256sum));
+    let trustedSha256sum =  enchex.stringify(sha256(blobHeaders.blob));
+    console.log("trustedSha256sum", trustedSha256sum);
 
-    if (request.body.data.sha256sum.toString(16) != enchex.stringify(trustedSha256sum))  {
-      return Promise.reject("Client sent untrusted file");
-    }
     return {
       blob: blobHeaders.blob,
       headers: response.headers,
@@ -57,8 +53,10 @@ server.post('/adapter_response.json', (request, response) => {
     
   });
 
-  let promisePutToStorage = promiseGetBlobHeaders.then((result)=>{
-    return result;
+  let promisePutToStorage = promiseGetBlobHeaders.then(async (blobHeaderstTustedSha256sum)=>{
+    // const cid = await client.storeBlob(new Blob(blobHeaderstTustedSha256sum.blob));
+    // result.cid = cid;
+    return blobHeaderstTustedSha256sum;
   });
 
 
@@ -68,43 +66,15 @@ server.post('/adapter_response.json', (request, response) => {
 
   promiseMint.then((result) => {
     response.json({
-      cib : result.trustedSha256sum
+      data: {
+        url: request.body.data.url,
+        sha256sum : result.trustedSha256sum
+      }
     });
   })
   
 });
 
-
-// getFile(url, ) {
-
-//   let proxy = window.location.host.match(/^localhost/) ? "static/pic.jpeg" : ('/proxy/?' + this.state.val)
-
-//   fetch(proxy)
-//       .then((response) => {
-//           if (!response.ok) {
-//               throw `HTTP error! Status: ${response.status}`;
-//           } else {
-//               let headers = {};
-
-//               response.headers.forEach(function (val, key) {
-//                   headers[key] = val;
-//               })
-//               response.blob().then((myBlob) => {
-//                   const objectURL = URL.createObjectURL(myBlob);
-//                   this.setState({
-//                       file: {
-//                           headers: headers,
-//                           image: objectURL,
-//                           imageHash: sha256(myBlob).toString(encHex)
-//                       },
-//                       procedure: 2,
-//                   })
-//               })
-//           }
-//       }).catch((err) => {
-//       this.setState({file: {error: err}});
-//   });
-// }
 
 
 // server.post('/storeBlob', (request, response) => {
@@ -142,7 +112,7 @@ server.post('/adapter_response.json', (request, response) => {
 //   //response.writeHead(204, {'Content-Type': 'application/json'});
 //   // bb.on('file', (name, file, info) => {
 //   //   const blob = new Blob(file);
-//   //   //const cid = await client.storeBlob(blob)
+//   //   //
 //   // });
 //   // bb.on('field', (name, value, info) => {
 //   //   // ...
