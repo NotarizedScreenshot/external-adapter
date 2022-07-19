@@ -29,7 +29,7 @@ function getBlobHeaders(url) {
   }).then((response) => {
   console.log(response);
     return {
-      blob: CryptoJS.lib.WordArray.create(response.data),
+      blob: response.data,
       headers: response.headers
     }
   });
@@ -42,7 +42,7 @@ server.post('/adapter_response.json', (request, response) => {
 
 
   let promiseGetBlobHeaders = getBlobHeaders(request.body.data.url).then((blobHeaders) => {
-    let trustedSha256sum =  enchex.stringify(sha256(blobHeaders.blob));
+    let trustedSha256sum =  enchex.stringify(sha256( CryptoJS.lib.WordArray.create(blobHeaders.blob)));
     console.log("trustedSha256sum", trustedSha256sum);
 
     return {
@@ -54,8 +54,9 @@ server.post('/adapter_response.json', (request, response) => {
   });
 
   let promisePutToStorage = promiseGetBlobHeaders.then(async (blobHeaderstTustedSha256sum)=>{
-    // const cid = await client.storeBlob(new Blob(blobHeaderstTustedSha256sum.blob));
-    // result.cid = cid;
+    let blob = new Blob(blobHeaderstTustedSha256sum.blob);
+    //const cid = await client.storeBlob(blob);
+    //blobHeaderstTustedSha256sum.cid = cid;
     return blobHeaderstTustedSha256sum;
   });
 
@@ -65,12 +66,15 @@ server.post('/adapter_response.json', (request, response) => {
   });
 
   promiseMint.then((result) => {
-    response.json({
+    let json = { 
       data: {
         url: request.body.data.url,
-        sha256sum : result.trustedSha256sum
+        sha256sum : BigInt("0x" + result.trustedSha256sum).toString(),
+        cid: result.cid
       }
-    });
+    }
+    console.log(json);
+    response.json(json);
   })
   
 });
