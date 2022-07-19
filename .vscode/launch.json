@@ -1,0 +1,26 @@
+{
+    "configurations": [
+        {
+            "name": "Launch Program Debug",
+            "program": "${workspaceFolder}/src/server.cjs",
+            "request": "launch",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "node"
+        },
+        {
+            "name": "Launch Program",
+            "program": "${workspaceFolder}/public/server.js",
+            "env": {
+                "DEBUG":"axioss",
+                "ONLOCALHOST":"true"
+            },
+            "request": "launch",
+            "skipFiles": [
+                "<node_internals>/**"
+            ],
+            "type": "pwa-node"
+        }
+    ]
+}
