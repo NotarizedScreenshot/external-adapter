@@ -55,13 +55,20 @@ server.post('/adapter_response.json', (request, response) => {
 
   let promisePutToStorage = promiseGetBlobHeaders.then(async (blobHeaderstTustedSha256sum)=>{
     let blob = new Blob(blobHeaderstTustedSha256sum.blob);
-    //const cid = await client.storeBlob(blob);
-    //blobHeaderstTustedSha256sum.cid = cid;
+    const cid = await client.storeBlob(blob);
+    blobHeaderstTustedSha256sum.cid = cid;
     return blobHeaderstTustedSha256sum;
   });
 
 
-  let promiseMint = promisePutToStorage.then((result) => {
+  let promisePutMetadata = promisePutToStorage.then((result) => {
+    let blob = new Blob({
+      metadata: {
+        headers: result.headers,
+      }
+    });
+    const metadataCid = await client.storeBlob(blob);
+    result.metadataCid = metadataCid;
     return result;
   });
 
