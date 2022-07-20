@@ -61,7 +61,7 @@ server.post('/adapter_response.json', (request, response) => {
   });
 
 
-  let promisePutMetadata = promisePutToStorage.then((result) => {
+  let promisePutMetadata = promisePutToStorage.then(async (result) => {
     let blob = new Blob({
       metadata: {
         headers: result.headers,
@@ -72,12 +72,13 @@ server.post('/adapter_response.json', (request, response) => {
     return result;
   });
 
-  promiseMint.then((result) => {
+  promisePutMetadata.then((result) => {
     let json = { 
       data: {
         url: request.body.data.url,
         sha256sum : BigInt("0x" + result.trustedSha256sum).toString(),
-        cid: result.cid
+        cid: result.cid,
+        metadataCid: result.metadataCid
       }
     }
     console.log(json);
