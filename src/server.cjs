@@ -27,7 +27,6 @@ function getBlobHeaders(url) {
     method: 'GET',
     responseType: 'arraybuffer', // important
   }).then((response) => {
-  console.log(response);
     return {
       blob: response.data,
       headers: response.headers
