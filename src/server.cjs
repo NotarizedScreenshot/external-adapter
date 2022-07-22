@@ -37,7 +37,6 @@ function getBlobHeaders(url) {
     method: 'GET',
     responseType: 'arraybuffer', // important
   }).then((response) => {
-  console.log(response);
     return {
       blob: response.data,
       headers: response.headers
@@ -59,7 +58,7 @@ server.post('/adapter_response.json', (request, response) => {
       headers: blobHeaders.headers,
       trustedSha256sum
     }
-    
+
   });
 
   let promisePutToStorage = promiseGetBlobHeaders.then(async (blobHeaderstTustedSha256sum)=>{
@@ -78,9 +77,25 @@ server.post('/adapter_response.json', (request, response) => {
 
 
   let promisePutMetadata = promisePutToStorage.then(async (result) => {
+    let name = "Notarized Screenshot 0x" + result.trustedSha256sum;
+    let image = "ipfs://" + result.cid;
+    let ts = Date.now()
+    let time = new Date(ts).toUTCString();
+    let url = request.body.data.url;
+    let description = name +
+      " by QuantumOracle, result of verifying the image served at URL \n" +
+      url +
+      " at ts " + time + "\n" +
+      " Check metadata fields for more details."
     let blob = new Blob(JSON.stringify({
-      metadata: {
-        headers: result.headers,
+      name: name,
+      image: image,
+      description: description,
+      ts: ts,
+      time: time,
+      url: url,
+      verificationData: {
+        headers: result.headers
       }
     }));
     const metadataCid = await client.storeBlob(blob);
@@ -89,10 +104,10 @@ server.post('/adapter_response.json', (request, response) => {
   });
 
   promisePutMetadata.then((result) => {
-    let json = { 
+    let json = {
       data: {
         url: request.body.data.url,
-        sha256sum : BigInt("0x" + result.trustedSha256sum).toString(),
+        sha256sum: BigInt("0x" + result.trustedSha256sum).toString(),
         cid: result.cid,
         metadataCid: result.metadataCid
       }
@@ -100,7 +115,7 @@ server.post('/adapter_response.json', (request, response) => {
     console.log(json);
     response.json(json);
   })
-  
+
 });
 
 server.listen(9000, () => {
