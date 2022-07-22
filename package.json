@@ -21,7 +21,8 @@
 		"express": "^4.18.1",
 		"images": "^3.2.4",
 		"json-bigint": "^1.0.0",
-		"nft.storage": "^6.4.0"
+		"nft.storage": "^6.4.0",
+		"svg-render": "^1.2.0"
 	},
 	"devDependencies": {
 		"@babel/core": "^7.18.6",
