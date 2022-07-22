@@ -69,6 +69,7 @@ server.post('/adapter_response.json', (request, response) => {
     let blobImage = images(blobHeaderstTustedSha256sum.blob);
 
     let height = Math.min(blobImage.height(), blobImage.width());
+
     //345x422 
     const watermarkBuffer = await svgRender({
       buffer: Buffer.from(watermark, 'base64'),
@@ -77,8 +78,10 @@ server.post('/adapter_response.json', (request, response) => {
     
     //let watermarkBuffer = Buffer.from(watermark, 'base64');
     let watermarkImage = images(watermarkBuffer);
+
+    let left = (blobImage.width() - watermarkImage.width())/2;
     
-    let newImage = blobImage.draw(watermarkImage, 0, 0);
+    let newImage = blobImage.draw(watermarkImage, left, 0);
     let newImageBuffer = newImage.encode("png");
     
     let blob = new Blob([newImageBuffer]);
