@@ -19,6 +19,7 @@
 		"busboy": "^1.6.0",
 		"crypto-js": "^4.1.1",
 		"express": "^4.18.1",
+		"images": "^3.2.4",
 		"json-bigint": "^1.0.0",
 		"nft.storage": "^6.4.0"
 	},
