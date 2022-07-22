@@ -47,6 +47,21 @@ function getBlobHeaders(url) {
 
 };
 
+server.get('/proxy', (request, response) => {
+  let url = request.url.split("/proxy?")[1];
+  let headers = request.headers; //don't need
+  return axios({
+    url,
+    method: 'GET',
+    responseType: 'arraybuffer', // important
+  }).then((axiosresponse) => {
+    let axiosHeaders = axiosresponse.headers;
+    response.set(axiosresponse.headers);
+    response.status(axiosresponse.status).send(axiosresponse.data);
+    return axiosresponse;
+  })
+});
+
 server.post('/adapter_response.json', (request, response) => {
   console.log(request.body);
 
