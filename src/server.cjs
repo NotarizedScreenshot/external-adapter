@@ -47,8 +47,8 @@ function getBlobHeaders(url) {
 
 };
 
-server.get('/proxy', (request, response) => {
-  let url = request.url.split("/proxy?")[1];
+server.get('/proxy/', (request, response) => {
+  let url = request.url.split("/proxy/?")[1];
   let headers = request.headers; //don't need
   return axios({
     url,
