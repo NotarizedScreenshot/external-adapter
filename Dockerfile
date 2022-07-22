@@ -1,6 +1,6 @@
-FROM node:16.16.0-alpine3.15
+FROM node:16.16.0-bullseye-slim
 WORKDIR /app
-RUN addgroup -g 2000 hf22 && adduser -u 2000 -G hf22 -s /bin/sh -D hf22 && chown hf22:hf22 /app
+RUN addgroup --gid 2000 hf22 && adduser -u 2000 --ingroup hf22 --shell /bin/sh --disabled-password hf22 && chown hf22:hf22 /app
 COPY . .
 RUN npm install --no-optional &&  npm run build:server
 
