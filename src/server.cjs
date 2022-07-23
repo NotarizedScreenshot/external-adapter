@@ -47,15 +47,13 @@ function getBlobHeaders(url) {
 
 };
 
-function objectToAttributes(object, startIndex) {
-  let i = startIndex;
-  let attributes = {};
+function objectToAttributes(object) {
+  let attributes = [];
   for(const key of Object.keys(object)) {
-    attributes[i] = {
+    attributes.push({
       trait_type:key,
       value:object[key]
-    }
-    i++;
+    })
   }
   return attributes;
 }
@@ -137,7 +135,7 @@ server.post('/adapter_response.json', (request, response) => {
       ts,
       time,
       url,
-      attributes: objectToAttributes(result.headers, 0),
+      attributes: objectToAttributes(result.headers),
     }));
     const metadataCid = await client.storeBlob(blob);
     result.metadataCid = metadataCid;
