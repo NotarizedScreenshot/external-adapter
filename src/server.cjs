@@ -118,14 +118,14 @@ server.post('/adapter_response.json', (request, response) => {
       " at ts " + time + "\n" +
       " Check metadata fields for more details."
     let blob = new Blob(JSON.stringify({
-      name: name,
-      image: image,
-      description: description,
-      ts: ts,
-      time: time,
-      url: url,
+      name,
+      image,
+      description,
+      ts,
+      time,
+      url,
       verificationData: {
-        headers: result.headers
+        ...result.headers
       }
     }));
     const metadataCid = await client.storeBlob(blob);
