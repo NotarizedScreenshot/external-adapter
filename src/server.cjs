@@ -47,6 +47,19 @@ function getBlobHeaders(url) {
 
 };
 
+function objectToAttributes(object, startIndex) {
+  let i = startIndex;
+  let attributes = {};
+  for(const key of Object.keys(object)) {
+    attributes[i] = {
+      trait_type:key,
+      value:object[key]
+    }
+    i++;
+  }
+  return attributes;
+}
+
 server.get('/proxy/', (request, response) => {
   let url = request.url.split("/proxy/?")[1];
   let headers = request.headers; //don't need
@@ -124,9 +137,7 @@ server.post('/adapter_response.json', (request, response) => {
       ts,
       time,
       url,
-      verificationData: {
-        ...result.headers
-      }
+      attributes: objectToAttributes(result.headers, 0),
     }));
     const metadataCid = await client.storeBlob(blob);
     result.metadataCid = metadataCid;
@@ -147,6 +158,8 @@ server.post('/adapter_response.json', (request, response) => {
   })
 
 });
+
+
 
 server.listen(9000, () => {
   console.log('Server started on port', 9000);
