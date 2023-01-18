@@ -6,6 +6,7 @@
 	"main": "src/server.cjs",
 	"scripts": {
 		"start": "cross-env NODE_ENV=production node public/server",
+		"start:dev": "cross-env nodemon public/server",
 		"dev:client": "webpack --config webpack.client.config.js --watch",
 		"dev:server": "cross-env BUNDLE_NAME=server webpack --config webpack.server.config.cjs --watch",
 		"serve": "cross-env NODE_ENV=production node --max-old-space-size=4096 public/server",
@@ -22,6 +23,7 @@
 		"images": "^3.2.4",
 		"json-bigint": "^1.0.0",
 		"nft.storage": "^6.4.0",
+		"puppeteer": "^19.5.2",
 		"svg-render": "^1.2.0"
 	},
 	"devDependencies": {

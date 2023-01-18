@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <form id="form">
+      <input type="text" name="url" value="https://www.google.com/"/>
+      <button type="submit">SUBMIT</button>
+    </form>
+    <img src="" id="image"/>
+  </body>
+  <script>
+    document.getElementById("form").addEventListener("submit", (event) => {
+      event.preventDefault();
+      console.log(event.target.url.value)
+      fetch('/send', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({url: event.target.url.value})
+      }).then((response) => {
+        console.log(response.status);
+        response.blob().then((blob) => {
+          const objectURL = URL.createObjectURL(blob);
+          const image = document.getElementById('image');
+          image.src = objectURL;
+
+        })
+      })
+    })
+  </script>
+</html>
