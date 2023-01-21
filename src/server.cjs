@@ -78,21 +78,34 @@ server.get('/', (request, response) => {
   });
 })
 
-server.post('/send', (request, response) => {
+server.post('/send', async (request, response) => {
   const { url } = request.body;
 
-  puppeteer.launch().then((browser) => {
-    return browser.newPage();
-  }).then(page => {
-    page.goto(url).then(() => {
-      page.screenshot({ path: 'test.png' }).then((file) => {
-        response.set('Content-Type', 'image/png')
-        return response.status(200).send(file)
-      });
-    })
-  })
+  const browser = await puppeteer.launch();
+  console.log(await browser.userAgent());
 
-  // response.status(200).send(url)
+  const page = await browser.newPage();
+  await page.setViewport({
+  width: 1000,
+  height: 1000,
+  deviceScaleFactor: 1,
+});
+  await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36');
+  await page.goto(url, { waitUntil: 'networkidle0' });
+  const file = await page.screenshot({ path: 'test.png' });
+  response.set('Content-Type', 'image/png');
+  return response.status(200).send(file);
+
+})
+
+server.get('/stamped', (request, response) => {
+  const image = images('test.png');
+  const watermarkImage = images('stamp.png');
+  watermarkImage.resize(818, 1000);
+  const newImage = image.draw(watermarkImage, (1000 - 818) / 2, 0);
+  const newImageBuffer = newImage.encode("png");
+  response.set('Content-Type', 'image/png');
+  return response.status(200).send(newImageBuffer);
 })
 
 server.get('/proxy/', (request, response, next) => {
