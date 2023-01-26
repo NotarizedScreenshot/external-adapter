@@ -13,7 +13,8 @@
 		"build:client": "webpack --config webpack.client.config.jss",
 		"build:server": "cross-env BUNDLE_NAME=server webpack --config webpack.server.config.cjs",
 		"production": "webpack --config webpack.config.js --display verbose",
-		"dev:styles": "webpack --config webpack.config.js --watch"
+		"dev:styles": "webpack --config webpack.config.js --watch",
+    "dev:ts": "tsc && node dist/index.js"
 	},
 	"dependencies": {
 		"axios": "^0.27.2",
