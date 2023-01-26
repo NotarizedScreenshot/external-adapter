@@ -40,6 +40,7 @@ const makeScreenShot = async (request, response) => {
 
   const browser = await puppeteer.launch();
   console.log(await browser.userAgent());
+  console.log(request.headers);
 
   const page = await browser.newPage();
   await page.setViewport({
