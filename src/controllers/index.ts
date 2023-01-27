@@ -78,7 +78,6 @@ const getScreenShot = async (request: Request, response: Response) => {
     await page.goto(url, { waitUntil: "networkidle0" });
 
     const path = `${url.split("/").join("-")}.png`;
-    console.log("path", path);
 
     const file = await page.screenshot({ path });
     response.set("Content-Type", "image/png");

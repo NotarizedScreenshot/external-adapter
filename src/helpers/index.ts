@@ -34,7 +34,6 @@ export const getDomainInformation = (
   const domainInformation: string[] = [];
   const errors: any[] = [];
   exec(`dig ${url} any +trace`, (err, stdout, stderr) => {
-    console.log("std", !stderr, !err);
     if (!!err) {
       errors.push(err);
       return;
