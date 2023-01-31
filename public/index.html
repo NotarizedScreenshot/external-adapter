@@ -24,7 +24,6 @@
       <div style="flex: 0 0 45%">
         <img src="" id="image2" />
       </div>
-      <!-- <div id="meta"></div> -->
     </div>
   </body>
   <script>
@@ -54,39 +53,6 @@
             image2.src = objectURL;
           });
         });
-        // fetch('/meta').then((response) => {
-        //   response.json().then((json) => {
-        //     console.log('json', json);
-        //     const meta = document.getElementById('meta');
-        //     meta.innerHTML = null;
-        //     meta.style = "font-size: 10px";
-        //     json.forEach((el) => {
-        //       const entries = Object.entries(el);
-
-        //       entries.forEach((el2) => {
-        //         const div1 = document.createElement('div');
-        //         div1.id = el2[0];
-        //         if (el2[0] === 'dns') {
-
-        //           console.log('entries', el2[1])
-        //           el2[1].forEach((el3) => {
-        //             const div2 = document.createElement('div');
-        //             div2.style = 'width: 100%;     word-break: break-word;';
-        //             div2.textContent = el3.length === 1 ? el3 : el3.join('\t\t\t');
-
-        //             div1.appendChild(div2);
-        //           })
-
-        //         } else {
-        //           div1.textContent = `${el2[0]}: ${el2[1]}`;
-
-        //         }
-        //         meta.appendChild(div1);
-
-        //       })
-        //     })
-        //   })
-        // })
       });
     });
   </script>
