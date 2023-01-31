@@ -1,31 +1,11 @@
 # external-adapter
 External adapter for chainlink node aka backend
 
-### To build and run the server with typescript:
+### To compile ts and run the server:
 
   ```
+  npm install
   npm run dev:ts
-  ```
-
-### To build and run the server: 
-
-
-  ```
-  npm install
-  npm run build:server
-  npm start
-  ```
-  
-### To run server in dev mode:
-  #### 1st bash session: run webpack dev serve:
-  ```
-  npm install
-  npm run dev:server
-  ```
-  
-  #### 2nd bash session: run server with nodemon:
-  ```
-  npm run start:dev
   ```
 
 ### Browser access:
