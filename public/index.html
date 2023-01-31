@@ -9,6 +9,11 @@
       />
       <button type="submit">SUBMIT</button>
     </form>
+    <div>
+      <div>Screenshot Link: <a href='#' id='imagelink' target='_blank'>N/A</a></div>
+      <div>JSON Link: <a href='#' id='jsonlink' target='_blank'>N/A</a></div>
+      <div>OpenSea Link: <a href='#' id='opensealink' target='_blank'>N/A</a></div>
+    </div>
     <div
       style="
         display: flex;
@@ -33,7 +38,7 @@
       const image1 = document.getElementById("image1");
       const image2 = document.getElementById("image2");
       image1.src = "images/wait.png";
-      image2.src = "images/wait.png";
+      image2.src = "images/wait.png";      
       fetch("/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -45,13 +50,28 @@
           image1.style = "width: 90%; display: block;";
           image1.src = objectURL;
         });
-        fetch(`/stamped?file=${event.target.url.value}`).then((response) => {
+        fetch(`/stamped?path=${event.target.url.value}`).then((response) => {
           response.blob().then((blob) => {
             const objectURL = URL.createObjectURL(blob);
             const image2 = document.getElementById("image2");
             image2.style = "width: 90%;  display: block;";
             image2.src = objectURL;
           });
+         fetch(`/storedData?path=${event.target.url.value}`).then((response) => {
+            response.json().then((data) => {
+              console.log(data);
+              const { imageLink, jsonLink, openseaLink } = JSON.parse(data);
+              const imageLinkA = document.getElementById('imagelink');
+              imageLinkA.textContent = imageLink;
+              imageLinkA.href = imageLink;
+              const jsonLinkA = document.getElementById('jsonlink');
+              jsonLinkA.textContent = jsonLink;
+              jsonLinkA.href = jsonLink;
+              const openseaLinkA = document.getElementById('opensealink');
+              openseaLinkA.textContent = openseaLink;
+              openseaLinkA.href = openseaLink;
+            })
+          })
         });
       });
     });
