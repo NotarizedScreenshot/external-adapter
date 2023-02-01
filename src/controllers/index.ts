@@ -8,6 +8,7 @@ import {
   getDomainInformation,
   getIncludeSubstringElementIndex,
   trimUrl,
+  isValidUrl,
 } from "../helpers";
 
 const VIEWPORT_DEFAULT_WIDTH = 1000;
@@ -30,29 +31,39 @@ const meta: { [id: string]: any }[] = [];
 
 const getScreenShot = async (request: Request, response: Response) => {
   try {
+    if (!isValidUrl(request.body.url)) {
+    return response.status(422).json({ error: 'inValid url'});
+  }
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
     const url = trimUrl(request.body.url);
 
-    page.on("response", async (response: HTTPResponse) => {
-      const responseUrl = response.url();
-      const trimmedResponseUrl = trimUrl(responseUrl);
+    page.on("response", async (pupperTerresponse: HTTPResponse) => {
+      try {
+        const responseUrl = pupperTerresponse.url();
+        const trimmedResponseUrl = trimUrl(responseUrl);
 
-      if (trimmedResponseUrl === url) {
-        const headers = response.headers();
-        const { ip, port } = response.remoteAddress();
-        const host = getHostWithoutWWW(url);
+        if (trimmedResponseUrl === url) {
+          const headers = pupperTerresponse.headers();
+          const { ip, port } = pupperTerresponse.remoteAddress();
+          const host = getHostWithoutWWW(url);
 
-        meta.splice(0, meta.length);
-        meta.push({
-          date: new Date(headers["date"]),
-          contentType: headers["content-type"],
-        });
-        meta.push({ ip, port });
+          meta.splice(0, meta.length);
+          meta.push({
+            date: new Date(headers["date"]),
+            contentType: headers["content-type"],
+          });
+          meta.push({ ip, port });
 
-        const domainInfo = await getDomainInformation(host);
-        const hostIndex = getIncludeSubstringElementIndex(domainInfo, host, 1);
-        meta.push({ dns: domainInfo.slice(hostIndex!) });
+          const domainInfo = await getDomainInformation(host);
+          const hostIndex = getIncludeSubstringElementIndex(domainInfo, host, 1);
+          meta.push({ dns: domainInfo.slice(hostIndex!) });
+        }
+      } catch (error) {
+        if (error instanceof Error) {
+          meta.splice(0, meta.length);
+          meta.push({ error: { ...error, message: error.message} });
+        }        
       }
     });
 
@@ -65,24 +76,37 @@ const getScreenShot = async (request: Request, response: Response) => {
     await page.setUserAgent(DEFAULT_USERAGENT);
 
     await page.goto(url, { waitUntil: "networkidle0" });
-
+    
     const path = `${url.split("/").join("-")}.png`;
 
     const file = await page.screenshot({ path });
+
     browser.close();
     response.set("Content-Type", "image/png");
     return response.status(200).send(file);
   } catch (error) {
-    response.status(502).send(error);
+    if (error instanceof Error) {
+      return response.status(502).json({ error: error.message});
+    }
+    response.status(502).json({ error: `Unknown error: ${error}`})
   }
 };
 
-const getStampedImage = (request: Request, response: Response) => {
-
-  const { file } = request.query as { file: string };
-  const fileName = trimUrl(file).split("/").join("-") + ".png";
-
+const getStampedImage = async (request: Request, response: Response) => {
   try {
+    const { sourceUrl } = request.query as { sourceUrl: string };
+    if (!sourceUrl) {
+      return response.status(422).json({ error: `inValid query: sourceUrl = ${sourceUrl}`});
+    }
+    if (!!meta[0].error) {
+      return response.status(502).json({ error: 'can not get meta data'})
+    }
+
+    const fileName = trimUrl(sourceUrl).split("/").join("-") + ".png";
+
+    const screenshotImage = images(fileName);
+    const watermarkImage = images("public/images/stamp.png");
+
     const canvas = createCanvas(800, 1000);
     const ctx = canvas.getContext("2d");
     ctx.font = "15px monospace";
@@ -101,9 +125,7 @@ const getStampedImage = (request: Request, response: Response) => {
     ctx.fillText(metaString, 0, 20);
 
     const canvasBuffer = canvas.toBuffer();
-
-    const screenshotImage = images(fileName);
-    const watermarkImage = images("public/images/stamp.png");
+    
     watermarkImage.resize(WATERMARK_DEFAULT_WIDTH, WATERMARK_DEFAULT_HEIGHT);
 
     const metaImage = images(canvasBuffer);
@@ -119,8 +141,14 @@ const getStampedImage = (request: Request, response: Response) => {
     response.set("Content-Type", "image/png");
     return response.status(200).send(metamarkedImageBuffer);
   } catch (error) {
-    console.error("error", error);
-    response.status(502).send(error);
+    if (error instanceof Error) {
+      if (error.message.includes('ENOENT')) {
+        response.status(422).json({ error: error.message});
+        return;
+      }
+      return response.status(502).json({ error: error.message});
+    }
+    response.status(502).json({ error: `Unknown error ${error}`})
   }
 };
 

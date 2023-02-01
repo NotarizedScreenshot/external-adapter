@@ -2,7 +2,7 @@ import { exec } from "child_process";
 
 export const getDomainInformation = (
   url: string,
-  timeoutMs: number = 30000
+  timeoutMs: number = 5000
 ): Promise<any[]> => {
   const domainInformation: string[] = [];
   const errors: any[] = [];
@@ -31,7 +31,7 @@ export const getDomainInformation = (
   return new Promise((resolve, rejects) => {
     const checkTimeoutMs = 500;
     const check = (): NodeJS.Timeout | void => {
-      if (errors.length > 0) rejects(errors.join());
+      if (errors.length > 0) rejects(errors[0]);
       return domainInformation.length > 0
         ? resolve(domainInformation)
         : setTimeout(check, checkTimeoutMs);
@@ -39,7 +39,7 @@ export const getDomainInformation = (
     check();
 
     setTimeout(() => {
-      rejects("can not get DNS info");
+      rejects("dig: can not get DNS info");
     }, timeoutMs);
   });
 };
@@ -66,3 +66,12 @@ export const trimUrl = (url: string): string => {
     ? trimmedUrl.substring(0, trimmedUrl.length - 1)
     : trimmedUrl;
 };
+
+export const isValidUrl = (url: string, protocols: string[] = ['http:', 'https:']): boolean => {
+  try {
+    const urlToCheck = new URL(url);
+    return protocols.includes(urlToCheck.protocol);   
+  } catch (error) {
+    return false;
+  }  
+}

@@ -3,11 +3,12 @@
   <body style="background-color: bisque">
     <form id="form">
       <input
-        type="text"
-        name="url"
+        type="url"
+        name="url"        
         value="https://twitter.com/ChainHackerClan/status/1616486060430589956"
       />
       <button type="submit">SUBMIT</button>
+      <span id="urlerror" style='display: none; color: red; font-weight: bold; font-family: monospace;'>Error: inValid url</span>
     </form>
     <div
       style="
@@ -20,9 +21,11 @@
     >
       <div style="flex: 0 0 45%">
         <img src="" id="image1" />
+        <div id='image1status'></div>
       </div>
       <div style="flex: 0 0 45%">
         <img src="" id="image2" />
+        <div id='image2status'></div>
       </div>
     </div>
   </body>
@@ -32,20 +35,52 @@
       console.log(event.target.url.value);
       const image1 = document.getElementById("image1");
       const image2 = document.getElementById("image2");
+      const image1status = document.getElementById('image1status');
+      const image2status = document.getElementById('image2status');
+      const urlErrorSpan = document.getElementById('urlerror');
+      urlErrorSpan.style.display = 'none';
       image1.src = "images/wait.png";
+      image1.style.width = '200px';
       image2.src = "images/wait.png";
+      image2.style.width = '200px';
+      image1status.innerText = null;
+      image2status.innerText = null;
+      
       fetch("/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: event.target.url.value }),
-      }).then((response) => {
-        console.log(response.status);
+      }).then((response) => {        
+        if (response.status === 422) {
+          response.json().then((data) => {            
+            urlErrorSpan.style.display = 'inline';
+            urlErrorSpan.textContent = `Error: ${data.error}`;
+          })
+          return;
+        }
+        if (response.status === 502) {
+          response.json().then((data) => {            
+            image1status.innerText = `Error: ${data.error}`;
+            image1status.style.color = 'red';
+            image1.src = 'images/error.png';
+            image2.src = '';
+          })
+          return;
+        }
         response.blob().then((blob) => {
           const objectURL = URL.createObjectURL(blob);
           image1.style = "width: 90%; display: block;";
           image1.src = objectURL;
         });
-        fetch(`/stamped?file=${event.target.url.value}`).then((response) => {
+        fetch(`/stamped?sourceUrl=${event.target.url.value}`).then((response) => {
+          if (response.status === 422 || response.status === 502) {
+            response.json().then((data) => {
+              image2status.innerText = `Error: ${data.error}`;
+              image2status.style.color = 'red';
+              image2.src = 'images/error.png';
+            })
+            return;
+          }
           response.blob().then((blob) => {
             const objectURL = URL.createObjectURL(blob);
             const image2 = document.getElementById("image2");
