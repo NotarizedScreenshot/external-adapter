@@ -69,6 +69,7 @@ const getScreenShot = async (request: Request, response: Response) => {
     const path = `${url.split("/").join("-")}.png`;
 
     const file = await page.screenshot({ path });
+    browser.close();
     response.set("Content-Type", "image/png");
     return response.status(200).send(file);
   } catch (error) {
