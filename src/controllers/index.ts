@@ -1,4 +1,4 @@
-import fs from "fs/promises";
+import path from 'path';
 import { Request, Response } from "express";
 import images from "images";
 import puppeteer, { HTTPResponse } from "puppeteer";
@@ -18,14 +18,12 @@ const DEFAULT_USERAGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36";
 
 const getIndexPage = (_: Request, response: Response) => {
-  fs.readFile("public/index.html", "utf-8")
-    .then((data) => {
-      response.set("Content-Type", "text/html");
-      return response.status(200).send(data);
-    })
-    .catch((error) => {
-      response.status(502).send(error);
-    });
+  try {
+    response.set("Content-Type", "text/html");
+    response.status(200).sendFile(path.resolve(process.env.PWD!, 'public/index.html'));
+  } catch (error) {
+    response.status(502).send(error);
+  }
 };
 
 const meta: { [id: string]: any }[] = [];
