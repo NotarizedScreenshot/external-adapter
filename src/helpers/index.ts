@@ -1,48 +1,4 @@
-import { exec } from "child_process";
-
-export const getDomainInformation = (
-  url: string,
-  timeoutMs: number = 5000
-): Promise<any[]> => {
-  const domainInformation: string[] = [];
-  const errors: any[] = [];
-  exec(`dig ${url} any +trace`, (err, stdout, stderr) => {
-    if (!!err) {
-      errors.push(err);
-      return;
-    }
-    if (!!stderr) {
-      errors.push(stderr);
-      return;
-    }
-    if (!err && !stderr) {
-      const res = stdout
-        .split("\n")
-        .filter((el) => el !== "")
-        .map((el) =>
-          el
-            .split("\t")
-            .filter((el) => el !== "")
-            .join(" ")
-        );
-      domainInformation.push(...res);
-    }
-  });
-  return new Promise((resolve, rejects) => {
-    const checkTimeoutMs = 500;
-    const check = (): NodeJS.Timeout | void => {
-      if (errors.length > 0) rejects(errors[0]);
-      return domainInformation.length > 0
-        ? resolve(domainInformation)
-        : setTimeout(check, checkTimeoutMs);
-    };
-    check();
-
-    setTimeout(() => {
-      rejects("dig: can not get DNS info");
-    }, timeoutMs);
-  });
-};
+import { spawn } from "child_process";
 
 export const getIncludeSubstringElementIndex = (
   array: string[],
@@ -74,4 +30,24 @@ export const isValidUrl = (url: string, protocols: string[] = ['http:', 'https:'
   } catch (error) {
     return false;
   }  
+}
+
+export const getDnsInfo = (url: string, args: string[] = []): Promise<string> => {
+  const cmd = 'dig';
+
+  return new Promise((resolve, reject) => {
+    const process = spawn(cmd, [url, ...args]); 
+    let output = ''; 
+
+    process.on('error', reject)
+    process.stdout.on('error', reject);
+    process.stdout.on('data', (chunk) => {
+      output += chunk;
+    })
+
+    process.stdout.on('end', () => {
+      if(output.includes('connection timed out')) reject('dig timed out')
+      resolve(output);
+    })
+  })
 }

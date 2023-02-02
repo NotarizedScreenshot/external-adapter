@@ -5,10 +5,10 @@ import puppeteer, { HTTPResponse } from "puppeteer";
 import { createCanvas } from "canvas";
 import {
   getHostWithoutWWW,
-  getDomainInformation,
   getIncludeSubstringElementIndex,
   trimUrl,
   isValidUrl,
+  getDnsInfo,
 } from "../helpers";
 
 const VIEWPORT_DEFAULT_WIDTH = 1000;
@@ -23,6 +23,7 @@ const getIndexPage = (_: Request, response: Response) => {
     response.set("Content-Type", "text/html");
     response.status(200).sendFile(path.resolve(process.env.PWD!, 'public/index.html'));
   } catch (error) {
+    console.log(error);
     response.status(502).send(error);
   }
 };
@@ -32,7 +33,8 @@ const meta: { [id: string]: any }[] = [];
 const getScreenShot = async (request: Request, response: Response) => {
   try {
     if (!isValidUrl(request.body.url)) {
-    return response.status(422).json({ error: 'inValid url'});
+    console.log('error: invalid url')
+    return response.status(422).json({ error: 'invalid url'});
   }
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
@@ -55,11 +57,12 @@ const getScreenShot = async (request: Request, response: Response) => {
           });
           meta.push({ ip, port });
 
-          const domainInfo = await getDomainInformation(host);
-          const hostIndex = getIncludeSubstringElementIndex(domainInfo, host, 1);
+          const domainInfo = (await getDnsInfo(host, ['+trace', 'any'])).split('\n');
+          const hostIndex = getIncludeSubstringElementIndex(domainInfo, host, 2);          
           meta.push({ dns: domainInfo.slice(hostIndex!) });
         }
       } catch (error) {
+        console.log(error);
         if (error instanceof Error) {
           meta.splice(0, meta.length);
           meta.push({ error: { ...error, message: error.message} });
@@ -85,6 +88,7 @@ const getScreenShot = async (request: Request, response: Response) => {
     response.set("Content-Type", "image/png");
     return response.status(200).send(file);
   } catch (error) {
+    console.log(error);
     if (error instanceof Error) {
       return response.status(502).json({ error: error.message});
     }
@@ -96,9 +100,11 @@ const getStampedImage = async (request: Request, response: Response) => {
   try {
     const { sourceUrl } = request.query as { sourceUrl: string };
     if (!sourceUrl) {
+      console.log(`Error: inValid query: sourceUrl = ${sourceUrl}`);
       return response.status(422).json({ error: `inValid query: sourceUrl = ${sourceUrl}`});
     }
     if (!!meta[0].error) {
+      console.log('Error: can not get meta data')
       return response.status(502).json({ error: 'can not get meta data'})
     }
 
@@ -141,6 +147,7 @@ const getStampedImage = async (request: Request, response: Response) => {
     response.set("Content-Type", "image/png");
     return response.status(200).send(metamarkedImageBuffer);
   } catch (error) {
+    console.log(error);
     if (error instanceof Error) {
       if (error.message.includes('ENOENT')) {
         response.status(422).json({ error: error.message});
