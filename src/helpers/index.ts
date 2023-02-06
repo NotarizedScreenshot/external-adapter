@@ -1,4 +1,5 @@
 import { spawn } from "child_process";
+import { IMetadata, TMetadataAttributes } from 'types';
 
 export const getIncludeSubstringElementIndex = (
   array: string[],
@@ -47,7 +48,36 @@ export const getDnsInfo = (url: string, args: string[] = []): Promise<string> =>
 
     process.stdout.on('end', () => {
       if(output.includes('connection timed out')) reject('dig timed out')
-      resolve(output);
+      resolve(output.trim());
     })
   })
+}
+
+export const metadataToAttirbutes = (metadata: IMetadata): TMetadataAttributes => {
+  const attributes: TMetadataAttributes = [];
+  const { headers, ip, url, dns } = metadata;
+  attributes.push(
+    { trait_type: 'ip', value: ip}, 
+    { trait_type: 'url', value: url }, 
+    { trait_type: 'dns', value: dns.data.join('\n')},
+    );
+
+  for (const key of Object.keys(headers)) {
+    attributes.push({ trait_type: key, value: headers[key]})
+  }
+
+  return attributes;
+}
+
+export const getStampMetaString = (metadata: IMetadata) => {
+  const { headers, ip, url, dns } = metadata;
+  const data = [ `url: ${url}`, `ip: ${ip}` ];
+
+  for (const key of Object.keys(headers)) {
+    data.push(`${key}: ${headers[key]}`)
+  }
+  
+  const hostIndex = getIncludeSubstringElementIndex(dns.data, dns.host, 2);      
+  data.push(dns.data.slice(!!hostIndex ? hostIndex : 0).join('\n'));
+  return data.join('\n');
 }
