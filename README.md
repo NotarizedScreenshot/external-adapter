@@ -1,12 +1,12 @@
 # external-adapter
 External adapter for chainlink node aka backend
 
-### To compile ts and run the server:
 
-  ```
-  npm install
-  npm run dev:ts
-  ```
+### To compile ts and run the server:
+```
+npm install
+npm run dev:ts
+```
 
 ### Browser access:
 Link: http://localhost:9000/
