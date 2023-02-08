@@ -50,7 +50,7 @@ const getScreenShot = async (request: Request, response: Response) => {
     console.log('error: invalid url')
     return response.status(422).json({ error: 'invalid url'});
   }
-    const browser = await puppeteer.launch();
+    const browser = await puppeteer.launch({ args: ['--no-sandbox'] });
     const page = await browser.newPage();
     const url = trimUrl(request.body.url);
 

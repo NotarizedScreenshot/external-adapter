@@ -1,6 +1,13 @@
 # external-adapter
 External adapter for chainlink node aka backend
 
+### Run with docker:
+
+  ```
+  ./docker_build.sh <tag number>
+  ./docker_run.sh <tag number>
+  ```
+
 ### To compile ts and run the server:
 
   ```
