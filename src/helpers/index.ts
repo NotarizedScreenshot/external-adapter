@@ -1,4 +1,4 @@
-import { spawn } from "child_process";
+import { spawn, exec } from "child_process";
 import { IMetadata, TMetadataAttributes } from 'types';
 
 export const getIncludeSubstringElementIndex = (
@@ -34,12 +34,12 @@ export const isValidUrl = (url: string, protocols: string[] = ['http:', 'https:'
 }
 
 export const getDnsInfo = (url: string, args: string[] = []): Promise<string> => {
-  const cmd = 'dig';
+  const cmd = `dig ${url}`;
 
   return new Promise((resolve, reject) => {
+
     const process = spawn(cmd, [url, ...args]); 
     let output = ''; 
-
     process.on('error', reject)
     process.stdout.on('error', reject);
     process.stdout.on('data', (chunk) => {
@@ -47,9 +47,22 @@ export const getDnsInfo = (url: string, args: string[] = []): Promise<string> =>
     })
 
     process.stdout.on('end', () => {
+      console.log('dig process end')
       if(output.includes('connection timed out')) reject('dig timed out')
       resolve(output.trim());
     })
+
+    /*
+    exec(cmd, (err, stdout, stderr) => {
+      if (err) {
+        console.error(`exec error: ${err}`);
+        reject()
+      }
+    
+      console.log(`Number of files ${stdout}`);
+      resolve(stdout)
+    });
+    */
   })
 }
 
@@ -80,4 +93,12 @@ export const getStampMetaString = (metadata: IMetadata) => {
   const hostIndex = getIncludeSubstringElementIndex(dns.data, dns.host, 2);      
   data.push(dns.data.slice(!!hostIndex ? hostIndex : 0).join('\n'));
   return data.join('\n');
+}
+
+export const pngPathFromUrl = (url: string, signCode: string): string=> {
+  return `${signCode}_${url.split(":").join("_").split("/").join("_").split('.').join('_')}.png`
+}
+
+export const metadataPathFromUrl = (url: string, signCode: string): string => {
+  return  `${signCode}_${url.split(":").join("_").split("/").join("_").split('.').join('_')}.json`;
 }
