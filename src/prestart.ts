@@ -12,6 +12,10 @@ export const preStartJobs = async (sv: Application) => {
   if (!fss.existsSync(path.resolve(processPWD, 'data'))) {
     await fs.mkdir(path.resolve(processPWD, 'data'));
   }
+
+  //image processing
+
+  
   //connect to storages here ...
 };
 

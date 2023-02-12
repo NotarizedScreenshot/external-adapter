@@ -1,8 +1,8 @@
 import path from 'path';
 import fs from 'fs/promises';
 //import fss from "fs";
-import { Request, Response } from "express";
-import puppeteer, { HTTPResponse } from "puppeteer";
+import { Request, Response } from 'express';
+import puppeteer, { HTTPResponse } from 'puppeteer';
 import enchex from 'crypto-js/enc-hex';
 import sha256 from 'crypto-js/sha256';
 import CryptoJS from 'crypto-js';
@@ -15,26 +15,38 @@ import {
   metadataToAttirbutes,
   getStampMetaString,
   pngPathFromUrl,
+  pngPathStampedFromUrl,
   metadataPathFromUrl
-} from "../helpers";
+} from '../helpers';
 import {
   makeStampedImage
-} from "../helpers/images";
+} from '../helpers/images';
 
 import { IMetadata } from 'types';
 import { processPWD } from '../prestart';
+import images from 'images';
+import { createCanvas } from 'canvas';
 
 
 const VIEWPORT_DEFAULT_WIDTH = 1000;
 const VIEWPORT_DEFAULT_HEIGHT = 1000;
 
+
+const WATERMARK_DEFAULT_WIDTH = 818;
+const WATERMARK_DEFAULT_HEIGHT = 1000;
+const WATERMARK_IMAGE_PATH = path.resolve(processPWD, 'public/images/stamp_s.png');
+const META_STAMP_FONT = "10px monospace";
+const META_STAMP_COLOR = "red";
+const META_STAMP_CANVAS_DEFAULT_WIDTH = 900;
+const META_STAMP_CANVAS_DEFAULT_HEIGHT = 1000;
+
 const DEFAULT_USERAGENT =
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36";
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36';
 
 
 const getIndexPage = (_: Request, response: Response) => {
   try {
-    response.set("Content-Type", "text/html");
+    response.set('Content-Type', 'text/html');
     response.status(200).sendFile(path.resolve(process.env.PWD!, 'public/index.html'));
   } catch (error) {
     console.log(error);
@@ -60,7 +72,6 @@ const getScreenShot = async (request: Request, response: Response) => {
         
         const responseUrl = pupperTerresponse.url();
         const trimmedResponseUrl = trimUrl(responseUrl);
-        console.log('page response !', responseUrl)
         
         if (trimmedResponseUrl === url) {
           const headers = pupperTerresponse.headers();
@@ -89,15 +100,14 @@ const getScreenShot = async (request: Request, response: Response) => {
       deviceScaleFactor: 1,
     });
     await page.setUserAgent(DEFAULT_USERAGENT);
-    await page.goto(url, { waitUntil: "networkidle0" });
+    await page.goto(url, { waitUntil: 'networkidle0' });
     
     const screenshotPath = path.resolve(processPWD, 'data', pngPathFromUrl(url, clientCode));
 
-    //console.log('screenshot path: ', screenshotPath);
     const screenshotImageBuffer: Buffer = await page.screenshot({ path: screenshotPath });
     browser.close();
- 
-    response.set("Content-Type", "image/png");
+
+    response.set('Content-Type', 'image/png');
     return response.status(200).send(screenshotImageBuffer);
   } catch (error) {
     console.log(`controller error:  ${error}`);
@@ -110,6 +120,7 @@ const getScreenShot = async (request: Request, response: Response) => {
 
 
 const getStampedImage = async (request: Request, response: Response) => {
+
   try {
 
     const { sourceUrl, clientCode } = request.query as { sourceUrl: string, clientCode: string };
@@ -120,48 +131,19 @@ const getStampedImage = async (request: Request, response: Response) => {
     }
 
     const metadataPath = path.resolve(processPWD, 'data', metadataPathFromUrl(trimUrl(sourceUrl), clientCode));
-    //const metadata = JSON.parse(await fs.readFile(metadataPath, 'utf-8')) as IMetadata;
     const screenshotImagePath = path.resolve(processPWD, 'data', pngPathFromUrl(trimUrl(sourceUrl), clientCode));
-
+    
     if (!metadataPath || !screenshotImagePath) {
       console.log(`Error: inValid file paths ${metadataPath} ${screenshotImagePath}`);
       return response.status(422).json({ error: `files lost`});
     }
 
-    const stampedPicBuffer = await makeStampedImage(screenshotImagePath, metadataPath);
-    
-    //
-    // const screenshotImage = images(screenshotImagePath);
-    // const watermarkImage = images(WATERMARK_IMAGE_PATH);
+    const metamarkedImageBuffer = await makeStampedImage(screenshotImagePath, metadataPath);
+    const stampedFilePath = path.resolve(processPWD, 'data', pngPathStampedFromUrl(trimUrl(sourceUrl), clientCode));
 
-    // const canvas = createCanvas(META_STAMP_CANVAS_DEFAULT_WIDTH, META_STAMP_CANVAS_DEFAULT_HEIGHT);
-    // const ctx = canvas.getContext("2d");
-    // ctx.font = META_STAMP_FONT;
-    // ctx.fillStyle = META_STAMP_COLOR;
-    // const ctxFillTextX = 10;
-    // const ctxFillTextY = 20;
-    // ctx.fillText(getStampMetaString(metadata), ctxFillTextX, ctxFillTextY);
-    // const canvasBuffer = canvas.toBuffer();
-    
-    // watermarkImage.resize(WATERMARK_DEFAULT_WIDTH, WATERMARK_DEFAULT_HEIGHT);
-
-    // const metaImage = images(canvasBuffer);
-
-    // const watermarkedScreenshotImage = screenshotImage.draw(
-    //   watermarkImage,
-    //   (VIEWPORT_DEFAULT_WIDTH - WATERMARK_DEFAULT_WIDTH) / 2,
-    //   0
-    // );
-
-    // const metamarkedImage = watermarkedScreenshotImage.draw(metaImage, 0, 0);
-    // const metamarkedImageBuffer = metamarkedImage.encode("png");
-
-    // const stampedFilePath = path.resolve(processPWD, 'data', trimUrl(sourceUrl).split("/").join("-") + "-stamp.png");
-
-    //
-    //await fs.writeFile(stampedFilePath, metamarkedImageBuffer);
-    response.set("Content-Type", "image/png");
-    return response.status(200).send(stampedPicBuffer);
+    await fs.writeFile(stampedFilePath, metamarkedImageBuffer);
+    response.set('Content-Type', 'image/png');
+    return response.status(200).send(metamarkedImageBuffer);
 
   } catch (error) {
     if (error instanceof Error) {
@@ -173,6 +155,7 @@ const getStampedImage = async (request: Request, response: Response) => {
     }
     response.status(502).json({ error: `Unknown error ${error}`});
   }
+
 };
 
 

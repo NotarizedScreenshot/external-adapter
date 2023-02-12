@@ -38,6 +38,7 @@ export const getDnsInfo = (url: string, args: string[] = []): Promise<string> =>
 
   return new Promise((resolve, reject) => {
 
+    //reject('dns not done')
     const process = spawn(cmd, [url, ...args]); 
     let output = ''; 
     process.on('error', reject)
@@ -97,6 +98,10 @@ export const getStampMetaString = (metadata: IMetadata) => {
 
 export const pngPathFromUrl = (url: string, signCode: string): string=> {
   return `${signCode}_${url.split(":").join("_").split("/").join("_").split('.').join('_')}.png`
+}
+
+export const pngPathStampedFromUrl = (url: string, signCode: string): string=> {
+  return `${signCode}_${url.split(":").join("_").split("/").join("_").split('.').join('_')}_stamp.png`
 }
 
 export const metadataPathFromUrl = (url: string, signCode: string): string => {
