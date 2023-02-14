@@ -33,6 +33,10 @@
     document.getElementById("form").addEventListener("submit", (event) => {
       event.preventDefault();
       console.log(event.target.url.value);
+
+      //session token
+      const clientCode = Math.floor(Math.random() * 10000 * Math.random() * 100000)
+
       const image1 = document.getElementById("image1");
       const image2 = document.getElementById("image2");
       const image1status = document.getElementById('image1status');
@@ -49,7 +53,7 @@
       fetch("/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: event.target.url.value }),
+        body: JSON.stringify({ url: event.target.url.value, clientCode: clientCode }),
       }).then((response) => {        
         if (response.status === 422) {
           response.json().then((data) => {            
@@ -72,7 +76,7 @@
           image1.style = "width: 90%; display: block;";
           image1.src = objectURL;
         });
-        fetch(`/stamped?sourceUrl=${event.target.url.value}`).then((response) => {
+        fetch(`/stamped?sourceUrl=${event.target.url.value}&clientCode=${clientCode}`).then((response) => {
           if (response.status === 422 || response.status === 502) {
             response.json().then((data) => {
               image2status.innerText = `Error: ${data.error}`;
