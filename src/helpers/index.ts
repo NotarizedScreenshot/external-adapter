@@ -1,5 +1,8 @@
+import fss from "fs";
+import path from 'path';
 import { spawn, exec } from "child_process";
 import { IMetadata, TMetadataAttributes } from 'types';
+import { processPWD } from '../prestart';
 
 export const getIncludeSubstringElementIndex = (
   array: string[],
@@ -97,13 +100,13 @@ export const getStampMetaString = (metadata: IMetadata) => {
 }
 
 export const pngPathFromUrl = (url: string, signCode: string): string=> {
-  return `${signCode}_${url.split(":").join("_").split("/").join("_").split('.').join('_')}.png`
+  return `${url.split(":").join("_").split("/").join("_").split('.').join('_')}.png`
 }
 
 export const pngPathStampedFromUrl = (url: string, signCode: string): string=> {
-  return `${signCode}_${url.split(":").join("_").split("/").join("_").split('.').join('_')}_stamp.png`
+  return `${url.split(":").join("_").split("/").join("_").split('.').join('_')}_stamp.png`
 }
 
 export const metadataPathFromUrl = (url: string, signCode: string): string => {
-  return  `${signCode}_${url.split(":").join("_").split("/").join("_").split('.').join('_')}.json`;
+  return  `${url.split(":").join("_").split("/").join("_").split('.').join('_')}.json`;
 }
