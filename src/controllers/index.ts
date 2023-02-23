@@ -1,6 +1,6 @@
 import path from 'path';
 import fs from 'fs/promises';
-//import fss from "fs";
+import fss from "fs";
 import { Request, Response } from 'express';
 import puppeteer, { HTTPResponse } from 'puppeteer';
 import enchex from 'crypto-js/enc-hex';
@@ -56,6 +56,8 @@ const getIndexPage = (_: Request, response: Response) => {
 
 //const meta: { [id: string]: any }[] = [];
 
+// pngPathFromUrl,
+// metadataPathFromUrl are not using client data in order to make available only the last version of the same URL
 const getScreenShot = async (request: Request, response: Response) => {
   try {
     if ( !isValidUrl(request.body.url) ) {
@@ -80,6 +82,7 @@ const getScreenShot = async (request: Request, response: Response) => {
 
           const dnsResult = (await getDnsInfo(host, ['+trace', 'any']).catch((e) => {console.log('dns catch', e)}));
           const dns = typeof dnsResult === 'string' ? dnsResult.split('\n') : [];
+          
           // if dns === [], no dns data
           const meta: IMetadata = { headers, ip: ip || 'n/a', url: responseUrl, dns: { host, data: dns } };
           await fs.writeFile(path.resolve(processPWD, 'data', metadataPathFromUrl(url, clientCode)), JSON.stringify(meta));
@@ -159,11 +162,12 @@ const getStampedImage = async (request: Request, response: Response) => {
 };
 
 
+//
 export const adapterResponseJSON = async (request: Request, response: Response) => {
   try {
     const requestUrl = request.body.data.url;
-    const metadataPath = path.resolve(processPWD, 'data', trimUrl(requestUrl).split("/").join("-") + '.json');
-    const screenshotPath = path.resolve(processPWD, 'data', trimUrl(requestUrl).split("/").join("-") + '-stamp.png');
+    const metadataPath = path.resolve(processPWD, 'data', metadataPathFromUrl(trimUrl(requestUrl), ''));
+    const screenshotPath = path.resolve(processPWD, 'data', pngPathFromUrl(trimUrl(requestUrl), ''));
        
     const metadata = JSON.parse(await fs.readFile(metadataPath, 'utf-8'));
     const screenshotBuffer = await fs.readFile(screenshotPath);
@@ -193,7 +197,7 @@ export const adapterResponseJSON = async (request: Request, response: Response) 
       ts,
       time,
       url: requestUrl,
-      attributes: metadataToAttirbutes(metadata),
+      attributes: metadataToAttirbutes(metadata)
     })]);
 
     const metadataCid = await client.storeBlob(metadataBlob);
