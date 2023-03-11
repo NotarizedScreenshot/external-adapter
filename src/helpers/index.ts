@@ -1,6 +1,7 @@
 import fss from "fs";
 import path from 'path';
 import { spawn, exec } from "child_process";
+import { copyFileSync } from 'fs';
 import { IMetadata, TMetadataAttributes } from 'types';
 import { processPWD } from '../prestart';
 
@@ -37,7 +38,9 @@ export const isValidUrl = (url: string, protocols: string[] = ['http:', 'https:'
 }
 
 export const getDnsInfo = (url: string, args: string[] = []): Promise<string> => {
-  const cmd = `dig ${url}`;
+  console.log('get dns info')
+  const cmd = `dig`;
+  // console.log(cmd)
 
   return new Promise((resolve, reject) => {
 
@@ -109,4 +112,8 @@ export const pngPathStampedFromUrl = (url: string, signCode: string): string=> {
 
 export const metadataPathFromUrl = (url: string, signCode: string): string => {
   return  `${url.split(":").join("_").split("/").join("_").split('.').join('_')}.json`;
+}
+
+export const tweetDataPathFromUrl = (url: string, signCode: string): string => {
+  return  `${signCode}_${url.split(":").join("_").split("/").join("_").split('.').join('_')}_tweet.json`;
 }

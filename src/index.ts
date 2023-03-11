@@ -9,7 +9,7 @@ dotenv.config({ path: process.env.PWD + "/config.env" });
 async function startExpressInstance() {
   const server : Application  = express();
   server.use(express.json());
-  server.use(express.static("public"));
+  server.use(express.static('public', { index: false }));
   server.use(morgan('dev'))
   server.use("/", router);
 

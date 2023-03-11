@@ -39,6 +39,7 @@ export const makeStampedImage = async (srcImgPath: string, metaDataPath: string)
 
     ctx.drawImage(screenshotImage, 0, 0, META_STAMP_CANVAS_DEFAULT_WIDTH, META_STAMP_CANVAS_DEFAULT_HEIGHT);
     ctx.drawImage(watermarkImage, 0, 0, META_STAMP_CANVAS_DEFAULT_WIDTH, META_STAMP_CANVAS_DEFAULT_HEIGHT);
+    console.log(getStampMetaString(metadata));
     ctx.fillText(getStampMetaString(metadata), ctxFillTextX, ctxFillTextY);
 
     const canvasBuffer = canvas.toBuffer('image/png');
