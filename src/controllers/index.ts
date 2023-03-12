@@ -29,6 +29,7 @@ import { IMetadata } from 'types';
 import { processPWD } from '../prestart';
 import images from 'images';
 import { createCanvas } from 'canvas';
+import { createTweetData } from '../models';
 
 const VIEWPORT_DEFAULT_WIDTH = 1000;
 const VIEWPORT_DEFAULT_HEIGHT = 1000;
@@ -79,6 +80,30 @@ const getScreenShot = async (request: Request, response: Response) => {
       try {
         const responseUrl = pupperTerresponse.url();
         const trimmedResponseUrl = trimUrl(responseUrl);
+
+        if (responseUrl.match(/TweetDetail/g)) {
+          const responseData = await pupperTerresponse.json();
+
+          const tweetResponseInstructions =
+            responseData.data['threaded_conversation_with_injections_v2'].instructions;
+
+          const tweetTimeLineEntries = tweetResponseInstructions.reduce((acc: any, val: any) => {
+            return val.type === 'TimelineAddEntries' ? val : acc;
+          }, null).entries;
+
+          const itemContents = tweetTimeLineEntries.reduce((acc: any, val: any) => {
+            return val.entryId === `tweet-${request.body.tweetId}` ? val : acc;
+          }, null).content.itemContent;
+
+          const { legacy, views, core, card } = itemContents.tweet_results.result;
+
+          const tweetData = createTweetData(legacy, views, core, card);
+
+          await fs.writeFile(
+            path.resolve(processPWD, 'data', tweetDataPathFromTweetId(tweetId)),
+            JSON.stringify(tweetData),
+          );
+        }
 
         if (trimmedResponseUrl === url) {
           const headers = pupperTerresponse.headers();
