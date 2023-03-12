@@ -21,6 +21,7 @@ import {
   isValidBigInt,
   makeTweetUrlWithId,
   pngPathFromTweetId,
+  tweetDataPathFromTweetId,
 } from '../helpers';
 import { makeStampedImage } from '../helpers/images';
 
@@ -262,9 +263,55 @@ export const adapterResponseJSON = async (request: Request, response: Response) 
   }
 };
 
+export const getMetaData = async (request: Request, response: Response) => {
+  try {
+    const { tweetId } = request.query as { tweetId: string };
+    if (!isValidBigInt(tweetId)) {
+      console.log('error: invalid tweet id');
+      return response.status(422).json({ error: 'invalid tweet id' });
+    }
+    const metadataPath = path.resolve(processPWD, 'data', metadataPathFromTweetId(tweetId));
+    const metadata = await fs.readFile(metadataPath, 'utf-8');
+    response.status(200).json(JSON.parse(metadata));
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message.includes('ENOENT')) {
+        response.status(422).json({ error: error.message });
+        return;
+      }
+      return response.status(502).json({ error: error.message });
+    }
+    response.status(502).json({ error: `Unknown error ${error}` });
+  }
+};
+
+export const getTweetData = async (request: Request, response: Response) => {
+  try {
+    const { tweetId } = request.query as { tweetId: string };
+    if (!isValidBigInt(tweetId)) {
+      console.log('error: invalid tweet id');
+      return response.status(422).json({ error: 'invalid tweet id' });
+    }
+    const tweetDataPath = path.resolve(processPWD, 'data', tweetDataPathFromTweetId(tweetId));
+    const tweetData = await fs.readFile(tweetDataPath, 'utf-8');
+    response.status(200).json(JSON.parse(tweetData));
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message.includes('ENOENT')) {
+        response.status(422).json({ error: error.message });
+        return;
+      }
+      return response.status(502).json({ error: error.message });
+    }
+    response.status(502).json({ error: `Unknown error ${error}` });
+  }
+};
+
 export default {
   getIndexPage,
   getStampedImage,
   getScreenShot,
   adapterResponseJSON,
+  getMetaData,
+  getTweetData,
 };

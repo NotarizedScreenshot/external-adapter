@@ -7,9 +7,8 @@ export const getIncludeSubstringElementIndex = (
   start: number = 0,
 ): number | null =>
   array.reduce<number | null>(
-    (acc, val, index) =>
-      val.includes(substring) && acc === null && index >= start ? index : acc,
-    null
+    (acc, val, index) => (val.includes(substring) && acc === null && index >= start ? index : acc),
+    null,
   );
 
 export const getHostWithoutWWW = (url: string) => {
@@ -115,8 +114,12 @@ export const metadataPathFromTweetId = (tweetId: string): string => {
   return `${tweetId}-meta.json`;
 };
 
+export const tweetDataPathFromTweetId = (tweetId: string): string => {
+  return `${tweetId}-tweet.json`;
+};
+
 export const isValidBigInt = (data: string) => {
-  if (data.length === 0) return false;
+  if (!data || data.length === 0) return false;
   if (!/^\d+$/.test(data)) return false;
   if (BigInt(data) > BigInt(2 ** 64 - 1)) return false;
   return true;
