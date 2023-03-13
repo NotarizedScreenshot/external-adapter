@@ -25,7 +25,7 @@ import {
 } from '../helpers';
 import { makeStampedImage } from '../helpers/images';
 
-import { IMetadata } from 'types';
+import { IMetadata, ITweetData } from 'types';
 import { processPWD } from '../prestart';
 import images from 'images';
 import { createCanvas } from 'canvas';
@@ -83,26 +83,14 @@ const getScreenShot = async (request: Request, response: Response) => {
 
         if (responseUrl.match(/TweetDetail/g)) {
           const responseData = await pupperTerresponse.json();
+          const responseDataString = JSON.stringify(responseData.data);
 
-          const tweetResponseInstructions =
-            responseData.data['threaded_conversation_with_injections_v2'].instructions;
-
-          const tweetTimeLineEntries = tweetResponseInstructions.reduce((acc: any, val: any) => {
-            return val.type === 'TimelineAddEntries' ? val : acc;
-          }, null).entries;
-
-          const itemContents = tweetTimeLineEntries.reduce((acc: any, val: any) => {
-            return val.entryId === `tweet-${request.body.tweetId}` ? val : acc;
-          }, null).content.itemContent;
-
-          const { legacy, views, core, card } = itemContents.tweet_results.result;
-
-          const tweetData = createTweetData(legacy, views, core, card);
-
-          await fs.writeFile(
-            path.resolve(processPWD, 'data', tweetDataPathFromTweetId(tweetId)),
-            JSON.stringify(tweetData),
-          );
+          if (responseDataString.includes(`tweet-${request.body.tweetId}`)) {
+            await fs.writeFile(
+              path.resolve(processPWD, 'data', tweetDataPathFromTweetId(tweetId)),
+              responseDataString,
+            );
+          }
         }
 
         if (trimmedResponseUrl === url) {
@@ -317,9 +305,32 @@ export const getTweetData = async (request: Request, response: Response) => {
       console.log('error: invalid tweet id');
       return response.status(422).json({ error: 'invalid tweet id' });
     }
-    const tweetDataPath = path.resolve(processPWD, 'data', tweetDataPathFromTweetId(tweetId));
-    const tweetData = await fs.readFile(tweetDataPath, 'utf-8');
-    response.status(200).json(JSON.parse(tweetData));
+
+    const tweetResponseDataPath = path.resolve(
+      processPWD,
+      'data',
+      tweetDataPathFromTweetId(tweetId),
+    );
+
+    const tweetRawDataString = await fs.readFile(tweetResponseDataPath, 'utf-8');
+    const tweetRawData = JSON.parse(tweetRawDataString);
+
+    const tweetResponseInstructions =
+      tweetRawData['threaded_conversation_with_injections_v2'].instructions;
+
+    const tweetTimeLineEntries = tweetResponseInstructions.reduce((acc: any, val: any) => {
+      return val.type === 'TimelineAddEntries' ? val : acc;
+    }, null).entries;
+
+    const itemContents = tweetTimeLineEntries.reduce((acc: any, val: any) => {
+      return val.entryId === `tweet-${tweetId}` ? val : acc;
+    }, null).content.itemContent;
+
+    const { legacy, views, core, card } = itemContents.tweet_results.result;
+
+    const tweetData: ITweetData = createTweetData(legacy, views, core, card);
+
+    response.status(200).json(tweetData);
   } catch (error) {
     if (error instanceof Error) {
       if (error.message.includes('ENOENT')) {

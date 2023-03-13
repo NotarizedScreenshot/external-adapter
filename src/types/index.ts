@@ -1,11 +1,11 @@
 export interface IMetadata {
-  headers: { [id: string] : string},
-  ip: string,
-  url: string,
-  dns: { host: string, data: string[]};
+  headers: { [id: string]: string };
+  ip: string;
+  url: string;
+  dns: { host: string; data: string[] };
 }
 
-export type TMetadataAttributes = { trait_type: string, value: string}[];
+export type TMetadataAttributes = { trait_type: string; value: string }[];
 
 export interface ITweetCard {
   description: string;
@@ -22,7 +22,7 @@ export interface ITweetBody {
   urls: string[] | null;
   hashtags: string[] | null;
   symbols: string[] | null;
-  media: string[] | null;
+  media: { type: 'photo' | 'video'; src: string; thumb: string }[] | null;
   user_mentions: string[] | null;
 }
 

@@ -1,9 +1,20 @@
 import { ITweetBody, ITweetCard, ITweetData, ITweetDetails, ITweetUser } from 'types';
 
-export const createTweetData = ( legacy: any, views: any, core: any, card: any ): ITweetData => {
-  const { full_text, created_at, favorite_count, quote_count, retweet_count, entities } = legacy;
+export const createTweetData = (legacy: any, views: any, core: any, card: any): ITweetData => {
+  const {
+    full_text,
+    created_at,
+    favorite_count,
+    quote_count,
+    retweet_count,
+    entities,
+    extended_entities,
+  } = legacy;
 
-  const { media, user_mentions, urls, hashtags, symbols } = entities;
+  const { user_mentions, urls, hashtags, symbols } = entities;
+
+  const { media } = extended_entities;
+
   const { profile_image_url_https, name, screen_name } = core.user_results.result.legacy;
 
   const user: ITweetUser = {
@@ -30,7 +41,7 @@ export const createTweetData = ( legacy: any, views: any, core: any, card: any )
     'thumbnail_image_original',
   ];
 
-  const cardData: ITweetCard | null = !card
+  const cardData: ITweetBody['card'] = !card
     ? null
     : card?.legacy.binding_values.reduce((acc: any, val: any) => {
         if (props.includes(val.key)) {
@@ -45,26 +56,46 @@ export const createTweetData = ( legacy: any, views: any, core: any, card: any )
         return acc;
       }, {});
 
-  const tweetUrls: string[] | null =
+  const tweetUrls: ITweetBody['urls'] =
     !urls || urls.length === 0
       ? null
       : urls?.map((url: { expanded_url: string }) => url.expanded_url);
 
-  const tweetHashTags: string[] | null =
+  const tweetHashTags: ITweetBody['hashtags'] =
     !hashtags || hashtags.length === 0
       ? null
       : hashtags?.map((hashtag: { text: string }) => hashtag.text);
 
-  const tweetSymbols: string[] | null =
+  const tweetSymbols: ITweetBody['symbols'] =
     !symbols || symbols.length === 0
       ? null
       : symbols?.map((symbol: { text: string }) => symbol.text);
 
-  const tweetMedia: string[] | null = !media
+  const tweetMedia: ITweetBody['media'] = !media
     ? null
-    : media.map((el: { media_url_https: string }) => el.media_url_https);
+    : media.map(
+        ({
+          type,
+          media_url_https,
+          video_info,
+        }: {
+          media_url_https: string;
+          type: 'photo' | 'video';
+          video_info: { variants: any[] };
+        }) => {
+          if (type === 'video') {
+            const maxBitrateVariant = video_info.variants.reduce((acc, val) => {
+              if ((!!acc.bitrate && val.bitrate > acc.bitrate) || (!acc.bitrate && val.bitrate))
+                return val;
+              return acc;
+            }, {});
+            return { type, src: maxBitrateVariant.url, thumb: media_url_https };
+          }
+          return { type, src: media_url_https };
+        },
+      );
 
-  const tweetMentions: string[] | null = !user_mentions
+  const tweetMentions: ITweetBody['user_mentions'] = !user_mentions
     ? null
     : user_mentions.map((mention: { screen_name: string }) => mention.screen_name);
 
