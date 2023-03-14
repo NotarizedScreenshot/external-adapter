@@ -29,5 +29,4 @@ RUN chown appuser /app
 
 USER ${uid}:${gid}
 
-
 CMD ["npm", "start"]
