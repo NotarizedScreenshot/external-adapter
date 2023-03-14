@@ -13,7 +13,7 @@ export const createTweetData = (legacy: any, views: any, core: any, card: any): 
 
   const { user_mentions, urls, hashtags, symbols } = entities;
 
-  const { media } = extended_entities;
+  const media  = extended_entities?.media ?? [];
 
   const { profile_image_url_https, name, screen_name } = core.user_results.result.legacy;
 
