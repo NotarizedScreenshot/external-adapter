@@ -1,5 +1,8 @@
 import { spawn } from 'child_process';
 import { IMetadata, TMetadataAttributes } from 'types';
+import enchex from 'crypto-js/enc-hex';
+import sha256 from 'crypto-js/sha256';
+import CryptoJS from 'crypto-js';
 
 export const getIncludeSubstringElementIndex = (
   array: string[],
@@ -127,3 +130,25 @@ export const isValidBigInt = (data: string) => {
 
 export const makeTweetUrlWithId = (tweetId: string): string =>
   `https://twitter.com/twitter/status/${tweetId}`;
+
+export const getTrustedHashSum = (data: string | Buffer) =>
+  enchex.stringify(
+    // @ts-ignore
+    sha256(CryptoJS.lib.WordArray.create(data)),
+  );
+
+export const getTweetResultsFromTweetRawData = (tweetRawDataString: string, tweetId: string) => {
+  const tweetRawData = JSON.parse(tweetRawDataString);
+  const tweetResponseInstructions =
+    tweetRawData['threaded_conversation_with_injections_v2'].instructions;
+
+  const tweetTimeLineEntries = tweetResponseInstructions.reduce((acc: any, val: any) => {
+    return val.type === 'TimelineAddEntries' ? val : acc;
+  }, null).entries;
+
+  const itemContents = tweetTimeLineEntries.reduce((acc: any, val: any) => {
+    return val.entryId === `tweet-${tweetId}` ? val : acc;
+  }, null).content.itemContent;
+
+  return itemContents.tweet_results.result;
+};

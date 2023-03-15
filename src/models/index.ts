@@ -39,6 +39,7 @@ export const createTweetData = (legacy: any, views: any, core: any, card: any): 
     'description',
     'domain',
     'thumbnail_image_original',
+    'player_image_original',
   ];
 
   const cardData: ITweetBody['card'] = !card
