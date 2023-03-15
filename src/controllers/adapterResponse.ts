@@ -189,7 +189,7 @@ export const adapterResponseJSON = async (request: Request, response: Response) 
     const data = {
       data: {
         url: tweetId,
-        sha256sum: trustedSha256sum,
+        sha256sum: BigInt('0x' + trustedSha256sum).toString(),
         cid: screenshotCid,
         metadataCid: metadataCid,
       },
