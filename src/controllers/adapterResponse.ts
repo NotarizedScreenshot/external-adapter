@@ -50,7 +50,7 @@ export const adapterResponseJSON = async (request: Request, response: Response) 
     // );
 
     // const tweetId = request.body.data.url as string;
-    const tweetId = '1636039872002785287';
+    const tweetId = '1634234879570485253';
 
     const tweetDataPath = path.resolve(
       processPWD,
@@ -149,57 +149,60 @@ export const adapterResponseJSON = async (request: Request, response: Response) 
     const { body, user } = tweetData;
     const { card, media } = body;
 
-    const mediaFilesUploadedData = media
-      ? await Promise.all(
-          media.map(async ({ src }) => await uploadToNFTStorageWithHash(client, src)),
-        )
-      : [];
+    // const mediaFilesUploadedData = media
+    //   ? await Promise.all(
+    //       media.map(async ({ src }) => await uploadToNFTStorageWithHash(client, src)),
+    //     )
+    //   : [];
 
-    const cardImageKeys =
-      card &&
-      (Object.keys(card).filter((key) =>
-        ['thumbnail_image_original', 'player_image_original'].includes(key),
-      ) as [keyof ITweetCard]);
+    const mediaFilesUploadedData: any = [];
 
-    const cardImagesData = cardImageKeys
-      ? await Promise.all(
-          cardImageKeys?.map(async (key) => await uploadToNFTStorageWithHash(client, card![key])),
-        )
-      : [];
+    // const cardImageKeys =
+    //   card &&
+    //   (Object.keys(card).filter((key) =>
+    //     ['thumbnail_image_original', 'player_image_original'].includes(key),
+    //   ) as [keyof ITweetCard]);
 
-    const userImageUploadedData =
-      user.profile_image_url_https &&
-      (await uploadToNFTStorageWithHash(client, user.profile_image_url_https));
+    // const cardImagesData = cardImageKeys
+    //   ? await Promise.all(
+    //       cardImageKeys?.map(async (key) => await uploadToNFTStorageWithHash(client, card![key])),
+    //     )
+    //   : [];
+    const cardImagesData: any = [];
 
-    const screenshotBuffer = await fs.readFile(screenshotPath);
-    const screenshotHashSum = getTrustedHashSum(screenshotBuffer);
+    // const userImageUploadedData =
+    //   user.profile_image_url_https &&
+    //   (await uploadToNFTStorageWithHash(client, user.profile_image_url_https));
+
+    // const screenshotBuffer = await fs.readFile(screenshotPath);
+    // const screenshotHashSum = getTrustedHashSum(screenshotBuffer);
 
     const watermarkedImageBuffer = await makeStampedImage(screenshotPath, metadataPath);
     const watermarkedImageHashSum =
       watermarkedImageBuffer && getTrustedHashSum(watermarkedImageBuffer);
 
-    const screenshotCid = await uploadBufferToNFTStorage(client, screenshotBuffer);
+    // const screenshotCid = await uploadBufferToNFTStorage(client, screenshotBuffer);
     const watermarkedScreenshotCid =
       watermarkedImageBuffer && (await uploadBufferToNFTStorage(client, watermarkedImageBuffer));
 
-    console.log('screenshotCid', screenshotCid);
+    // console.log('screenshotCid', screenshotCid);
     // // console.log('watermarkedScreenshotCid', watermarkedScreenshotCid);
     // // console.log('userImageUploadedData', userImageUploadedData);
     // // console.log('cardImagesData', cardImagesData);
     // // console.log('mediaFilesUploadData', mediaFilesUploadedData);
 
     const finalData = {
-      screenshot: {
-        cid: screenshotCid,
-        hashSum: screenshotHashSum,
-      },
-      watermarkedScreenshot: {
-        cid: watermarkedScreenshotCid,
-        hashSum: watermarkedImageHashSum,
-      },
-      media: [userImageUploadedData, ...cardImagesData, ...mediaFilesUploadedData],
-      tweetRawData,
-      parsedTweetData: tweetData,
+      // screenshot: {
+      //   cid: screenshotCid,
+      //   hashSum: screenshotHashSum,
+      // },
+      // watermarkedScreenshot: {
+      //   cid: watermarkedScreenshotCid,
+      //   hashSum: watermarkedImageHashSum,
+      // },
+      // media: [userImageUploadedData, ...cardImagesData, ...mediaFilesUploadedData],
+      // tweetRawData,
+      // parsedTweetData: tweetData,
       metadata,
     };
 
@@ -246,7 +249,7 @@ export const adapterResponseJSON = async (request: Request, response: Response) 
         time,
         url: requestUrl,
         attributes,
-        finalData,
+        // finalData,
       }),
     ]);
 
