@@ -52,12 +52,7 @@ export const adapterResponseJSON = async (request: Request, response: Response) 
     const tweetId = '1636039872002785287';
 
     const tweetDataPath = path.resolve(processPWD, 'data', tweetDataPathFromTweetId(tweetId));
-    const metadataPath = path.resolve(
-      processPWD,
-      'src',
-      'temp',
-      metadataPathFromTweetId('tweetId'),
-    );
+    const metadataPath = path.resolve(processPWD, 'src', 'temp', metadataPathFromTweetId(tweetId));
     const screenshotPath = path.resolve(processPWD, 'src', 'temp', pngPathFromTweetId(tweetId));
 
     // console.log(tweetDataPath);
