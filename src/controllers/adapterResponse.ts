@@ -53,7 +53,7 @@ export const adapterResponseJSON = async (request: Request, response: Response) 
 
     const tweetDataPath = path.resolve(
       processPWD,
-      'data',
+      'src',
       'temp',
       tweetDataPathFromTweetId(tweetId),
     );
