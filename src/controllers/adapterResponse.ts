@@ -48,21 +48,17 @@ export const adapterResponseJSON = async (request: Request, response: Response) 
     //   pngPathFromUrl(trimUrl(requestUrl), ''),
     // );
 
-    const tweetId = request.body.data.url as string;
+    // const tweetId = request.body.data.url as string;
+    const tweetId = '1636039872002785287';
 
     const tweetDataPath = path.resolve(processPWD, 'data', tweetDataPathFromTweetId(tweetId));
     const metadataPath = path.resolve(
       processPWD,
       'src',
       'temp',
-      metadataPathFromTweetId('1636039872002785287'),
+      metadataPathFromTweetId('tweetId'),
     );
-    const screenshotPath = path.resolve(
-      processPWD,
-      'src',
-      'temp',
-      pngPathFromTweetId('1636039872002785287'),
-    );
+    const screenshotPath = path.resolve(processPWD, 'src', 'temp', pngPathFromTweetId(tweetId));
 
     // console.log(tweetDataPath);
     // console.log(metadataPath);
