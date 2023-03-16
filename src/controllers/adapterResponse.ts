@@ -37,6 +37,7 @@ import { time } from 'console';
 export const adapterResponseJSON = async (request: Request, response: Response) => {
   try {
     const requestUrl = request.body.data.url;
+    console.log('run adapterRescponse controller');
     // const metadataPath = path.resolve(
     //   processPWD,
     //   'data',
@@ -59,6 +60,8 @@ export const adapterResponseJSON = async (request: Request, response: Response) 
     );
     const metadataPath = path.resolve(processPWD, 'src', 'temp', metadataPathFromTweetId(tweetId));
     const screenshotPath = path.resolve(processPWD, 'src', 'temp', pngPathFromTweetId(tweetId));
+
+    console.log('paths', tweetDataPath, metadataPath, screenshotPath);
 
     // console.log(tweetDataPath);
     // console.log(metadataPath);
@@ -208,7 +211,7 @@ export const adapterResponseJSON = async (request: Request, response: Response) 
 
     const attributes = [...tweeetDataToAttributes(tweetData), ...metadataToAttirbutes(metadata)];
 
-    console.log(attributes);
+    // console.log(attributes);
 
     // processMetaData(await fs.readFile(metadataPath, 'utf-8'));
 
