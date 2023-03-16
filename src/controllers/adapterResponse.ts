@@ -9,6 +9,12 @@ import {
   tweetDataPathFromTweetId,
   getTrustedHashSum,
   getTweetResultsFromTweetRawData,
+  pngPathStampedFromUrl,
+  getImageBuffer,
+  uploadToNFTStorageWithHash,
+  uploadBufferToNFTStorage,
+  processMetaData,
+  tweeetDataToAttributes,
 } from '../helpers';
 import path from 'path';
 import { processPWD } from '../prestart';
@@ -22,7 +28,11 @@ import { createTweetData } from '../models';
 // import { buffer } from 'stream/consumers';
 
 import axios from 'axios';
-import { ITweetCard } from 'types';
+import { IAdapterResponseData, ITweetCard, ITweetResults } from 'types';
+import { makeStampedImage } from '../helpers/images';
+import { copyFileSync } from 'fs';
+import images from 'images';
+import { time } from 'console';
 
 export const adapterResponseJSON = async (request: Request, response: Response) => {
   try {
@@ -40,7 +50,7 @@ export const adapterResponseJSON = async (request: Request, response: Response) 
 
     const tweetId = request.body.data.url as string;
 
-    // const tweetDataPath = path.resolve(processPWD, 'data', tweetDataPathFromTweetId(tweetId));
+    const tweetDataPath = path.resolve(processPWD, 'data', tweetDataPathFromTweetId(tweetId));
     const metadataPath = path.resolve(
       processPWD,
       'src',
@@ -126,46 +136,102 @@ export const adapterResponseJSON = async (request: Request, response: Response) 
 
     // console.log(await Promise.all(cardFiles));
 
-    // thumbnail_image_original : [];
+    const client = new NFTStorage({ token: process.env.NFT_STORAGE_TOKEN! });
 
-    // buffers.map(async (buffer, index) => {
-    //   const file = await fs.readFile(path.resolve(processPWD, 'data', `${tweetId}-${index}.mp4`));
-    //   console.log(file);
-    //   console.log(getTrustedHashSum(file));
-    //   console.log(buffer);
-    //   console.log(getTrustedHashSum(buffer));
+    const metadata = processMetaData(await fs.readFile(metadataPath, 'utf-8'));
+    // console.log(metadata);
 
-    //   // fs.writeFile(path.resolve(processPWD, 'data', `${tweetId}-${index}.jpg`), buffer);
-    // });
+    const tweetRawData = await fs.readFile(tweetDataPath, 'utf-8');
+    const tweetResults = getTweetResultsFromTweetRawData(tweetRawData, tweetId) as ITweetResults;
 
-    const metadata = JSON.parse(await fs.readFile(metadataPath, 'utf-8'));
-    console.log('metadata', metadata);
+    const tweetData = createTweetData(tweetResults);
+    // console.log(tweetData);
+
+    const { body, user } = tweetData;
+    const { card, media } = body;
+
+    const mediaFilesUploadedData = media
+      ? await Promise.all(
+          media.map(async ({ src }) => await uploadToNFTStorageWithHash(client, src)),
+        )
+      : [];
+
+    const cardImageKeys =
+      card &&
+      (Object.keys(card).filter((key) =>
+        ['thumbnail_image_original', 'player_image_original'].includes(key),
+      ) as [keyof ITweetCard]);
+
+    const cardImagesData = cardImageKeys
+      ? await Promise.all(
+          cardImageKeys?.map(async (key) => await uploadToNFTStorageWithHash(client, card![key])),
+        )
+      : [];
+
+    const userImageUploadedData =
+      user.profile_image_url_https &&
+      (await uploadToNFTStorageWithHash(client, user.profile_image_url_https));
 
     const screenshotBuffer = await fs.readFile(screenshotPath);
+    const screenshotHashSum = getTrustedHashSum(screenshotBuffer);
 
-    const trustedSha256sum = enchex.stringify(
-      // @ts-ignore
-      sha256(CryptoJS.lib.WordArray.create(screenshotBuffer)),
-    );
-    // const trustedSha256sum1 = enchex.stringify(
+    const watermarkedImageBuffer = await makeStampedImage(screenshotPath, metadataPath);
+    const watermarkedImageHashSum =
+      watermarkedImageBuffer && getTrustedHashSum(watermarkedImageBuffer);
+
+    const screenshotCid = await uploadBufferToNFTStorage(client, screenshotBuffer);
+    const watermarkedScreenshotCid =
+      watermarkedImageBuffer && (await uploadBufferToNFTStorage(client, watermarkedImageBuffer));
+
+    // // console.log('screenshotCid', screenshotCid);
+    // // console.log('watermarkedScreenshotCid', watermarkedScreenshotCid);
+    // // console.log('userImageUploadedData', userImageUploadedData);
+    // // console.log('cardImagesData', cardImagesData);
+    // // console.log('mediaFilesUploadData', mediaFilesUploadedData);
+
+    const finalData = {
+      screenshot: {
+        cid: screenshotCid,
+        hashSum: screenshotHashSum,
+      },
+      watermarkedScreenshot: {
+        cid: watermarkedScreenshotCid,
+        hashSum: watermarkedImageHashSum,
+      },
+      media: [userImageUploadedData, ...cardImagesData, ...mediaFilesUploadedData],
+      tweetRawData,
+      parsedTweetData: tweetData,
+      metadata,
+    };
+
+    const trustedSha256sum = getTrustedHashSum(JSON.stringify(finalData));
+
+    // console.log(metadata);
+    // console.log(metadataToAttirbutes(metadata));
+    // console.log(tweeetDataToAttributes(tweetData));
+
+    const attributes = [...tweeetDataToAttributes(tweetData), ...metadataToAttirbutes(metadata)];
+
+    console.log(attributes);
+
+    // processMetaData(await fs.readFile(metadataPath, 'utf-8'));
+
+    // const trustedSha256sum = enchex.stringify(
     //   // @ts-ignore
-    //   sha256(CryptoJS.lib.WordArray.create(x)),
+    //   sha256(CryptoJS.lib.WordArray.create(watermarkedImageBuffer)),
     // );
 
-    const screenshotBlob = new NFTBlob([screenshotBuffer]);
-
-    const client = new NFTStorage({ token: process.env.NFT_STORAGE_TOKEN! });
-    const screenshotCid = await client.storeBlob(screenshotBlob);
+    // const screenshotCid = await client.storeBlob(screenshotBlob);
 
     // '0x09e789c62c58992bfdb7aa24c2c9362bf383bd5060008b3c9e8e41e6162843e7'
 
     const name = 'Notarized Screenshot 0x' + trustedSha256sum;
-    const image = 'ipfs://' + screenshotCid;
+    const image = 'ipfs://' + watermarkedScreenshotCid;
     const ts = Date.now();
     const time = new Date(ts).toUTCString();
     const description =
       name +
-      ' by QuantumOracle, result of verifying the image served at URL \n' +
+      ' by QuantumOracle, result of verifying the tweet served by ID \n' +
       requestUrl +
       ' at ts ' +
       time +
@@ -180,22 +246,24 @@ export const adapterResponseJSON = async (request: Request, response: Response) 
         ts,
         time,
         url: requestUrl,
-        attributes: metadataToAttirbutes(metadata),
+        attributes,
+        finalData,
       }),
     ]);
 
     const metadataCid = await client.storeBlob(metadataBlob);
 
-    const data = {
+    const data: { data: IAdapterResponseData } = {
       data: {
         url: tweetId,
         sha256sum: BigInt('0x' + trustedSha256sum).toString(),
-        cid: screenshotCid,
+        cid: String(watermarkedScreenshotCid),
         metadataCid: metadataCid,
       },
     };
+    // const data = { ok: 'ok', trustedSha256sum, finalData };
+    // const data = { ok: 'ok' };
     response.status(200).json(data);
-    // response.status(200).json({ ok: 'ok', tweetRawDataTrustedSum, tweetData });
   } catch (error) {
     console.log(error);
     if (error instanceof Error) {

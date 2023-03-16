@@ -25,7 +25,7 @@ import {
 } from '../helpers';
 import { makeStampedImage } from '../helpers/images';
 
-import { IMetadata, ITweetData } from 'types';
+import { IMetadata, ITweetData, ITweetResults } from 'types';
 import { processPWD } from '../prestart';
 import images from 'images';
 import { createCanvas } from 'canvas';
@@ -188,7 +188,7 @@ const getStampedImage = async (request: Request, response: Response) => {
       pngPathStampedFromUrl(trimUrl(sourceUrl), clientCode),
     );
 
-    await fs.writeFile(stampedFilePath, metamarkedImageBuffer);
+    metamarkedImageBuffer && await fs.writeFile(stampedFilePath, metamarkedImageBuffer);
     response.set('Content-Type', 'image/png');
     return response.status(200).send(metamarkedImageBuffer);
   } catch (error) {
@@ -331,10 +331,8 @@ export const getTweetData = async (request: Request, response: Response) => {
       return val.entryId === `tweet-${tweetId}` ? val : acc;
     }, null).content.itemContent;
 
-    const { legacy, views, core, card } = itemContents.tweet_results.result;
+    const tweetData: ITweetData = createTweetData(itemContents.tweet_results.result);
 
-    const tweetData: ITweetData = createTweetData(legacy, views, core, card);
-    
     response.status(200).json(tweetData);
   } catch (error) {
     if (error instanceof Error) {

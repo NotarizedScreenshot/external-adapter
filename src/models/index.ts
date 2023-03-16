@@ -1,6 +1,14 @@
-import { ITweetBody, ITweetCard, ITweetData, ITweetDetails, ITweetUser } from 'types';
+import {
+  ITweetBody,
+  ITweetCard,
+  ITweetData,
+  ITweetDetails,
+  ITweetResults,
+  ITweetUser,
+} from 'types';
 
-export const createTweetData = (legacy: any, views: any, core: any, card: any): ITweetData => {
+export const createTweetData = (tweetResults: ITweetResults): ITweetData => {
+  const { legacy, views, core, card } = tweetResults;
   const {
     full_text,
     created_at,
@@ -90,7 +98,13 @@ export const createTweetData = (legacy: any, views: any, core: any, card: any): 
                 return val;
               return acc;
             }, {});
-            return { type, src: maxBitrateVariant.url, thumb: media_url_https };
+            const minBitrateVariant = video_info.variants.reduce((acc, val) => {
+              if ((!!acc.bitrate && val.bitrate < acc.bitrate) || (!acc.bitrate && val.bitrate))
+                return val;
+              return acc;
+            }, {});
+
+            return { type, src: minBitrateVariant.url, thumb: media_url_https };
           }
           return { type, src: media_url_https };
         },

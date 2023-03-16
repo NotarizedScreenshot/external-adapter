@@ -7,10 +7,18 @@ export interface IMetadata {
 
 export type TMetadataAttributes = { trait_type: string; value: string }[];
 
+export interface ITweetResults {
+  legacy: any;
+  views: any;
+  core: any;
+  card: any;
+}
+
 export interface ITweetCard {
   description: string;
   domain: string;
   thumbnail_image_original: string;
+  player_image_original: string;
   vanity_url: string;
   title: string;
   card_url: string;
@@ -43,4 +51,11 @@ export interface ITweetData {
   body: ITweetBody;
   user: ITweetUser;
   details: ITweetDetails;
+}
+
+export interface IAdapterResponseData {
+  url: string;
+  sha256sum: string;
+  cid: string;
+  metadataCid: string;
 }

@@ -1,8 +1,19 @@
 import { spawn } from 'child_process';
-import { IMetadata, TMetadataAttributes } from 'types';
+import {
+  IMetadata,
+  ITweetBody,
+  ITweetCard,
+  ITweetData,
+  ITweetDetails,
+  ITweetUser,
+  TMetadataAttributes,
+} from 'types';
 import enchex from 'crypto-js/enc-hex';
 import sha256 from 'crypto-js/sha256';
 import CryptoJS from 'crypto-js';
+import axios from 'axios';
+import { response } from 'express';
+import { NFTStorage, Blob as NFTBlob } from 'nft.storage';
 
 export const getIncludeSubstringElementIndex = (
   array: string[],
@@ -84,6 +95,44 @@ export const metadataToAttirbutes = (metadata: IMetadata): TMetadataAttributes =
   return attributes;
 };
 
+export const tweeetDataToAttributes = (tweetData: ITweetData) => {
+  const { body, user, details } = tweetData;
+  const attributes: TMetadataAttributes = [];
+
+  const userKeys = Object.keys(user) as [keyof ITweetUser];
+  for (const key of userKeys) {
+    attributes.push({ trait_type: `user-${key}`, value: user[key] });
+  }
+
+  const detailsKeys = Object.keys(details) as [keyof ITweetDetails];
+  for (const key of detailsKeys) {
+    attributes.push({ trait_type: key, value: String(details[key]) });
+  }
+  const bodyKeys = Object.keys(body) as [keyof ITweetBody];
+  for (const key of bodyKeys) {
+    if (key === 'full_text') attributes.push({ trait_type: key, value: String(body[key]) });
+    if (key === 'hashtags' || key === 'symbols' || key === 'urls' || key === 'user_mentions') {
+      body[key] && attributes.push({ trait_type: key, value: body[key]!.join(' ') });
+    }
+    if (key === 'media') {
+      body[key] &&
+        attributes.push({
+          trait_type: key,
+          value: String(body[key]?.map((el) => el.src).join(', ')),
+        });
+    }
+    if (!!body.card && key === 'card') {
+      const { card } = body;
+      const cardKeys = Object.keys(card) as [keyof ITweetCard];
+      for (const cardKey of cardKeys) {
+        if (!!card[cardKey])
+          attributes.push({ trait_type: `card-${cardKey}`, value: card[cardKey] });
+      }
+    }
+  }
+
+  return attributes;
+};
 export const getStampMetaString = (metadata: IMetadata) => {
   const { headers, ip, url, dns } = metadata;
   const data = [`url: ${url}`, `ip: ${ip}`];
@@ -151,4 +200,53 @@ export const getTweetResultsFromTweetRawData = (tweetRawDataString: string, twee
   }, null).content.itemContent;
 
   return itemContents.tweet_results.result;
+};
+
+export const getImageBuffer = async (src: string): Promise<Buffer | null> => {
+  try {
+    const response = await axios.get(src, { responseType: 'arraybuffer' });
+    return Buffer.from(response.data);
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+};
+
+export const uploadToNFTStorageWithHash = async (client: NFTStorage, src: string) => {
+  try {
+    const buffer = await getImageBuffer(src);
+    if (!buffer) throw new Error(`fail to download resource: ${src}`);
+    const hashSum = getTrustedHashSum(buffer);
+    const blob = new NFTBlob([buffer]);
+    const cid = await client.storeBlob(blob);
+
+    return { src, hashSum, cid };
+  } catch (error: any) {
+    console.error('uploadToNFTStorageWithHash error', error);
+    return { src, error: error.message };
+  }
+};
+
+export const uploadBufferToNFTStorage = async (client: NFTStorage, buffer: Buffer) => {
+  try {
+    const blob = new NFTBlob([buffer]);
+    const cid = await client.storeBlob(blob);
+    return cid;
+  } catch (error: any) {
+    console.error('uploadBufferToNFTStorage', error);
+    return null;
+  }
+};
+
+export const processMetaData = (rawDataJSON: string) => {
+  const parsedMetaData = JSON.parse(rawDataJSON);
+  const { host, data } = parsedMetaData.dns;
+  const dnsData = data
+    .filter((el: string) => !el.includes('DiG') && !el.includes('global options'))
+    .map((el: string) => {
+      const splitted = el.split('\t').join(' ');
+      return splitted;
+    });
+
+  return { ...parsedMetaData, dns: { host, data: dnsData } };
 };
