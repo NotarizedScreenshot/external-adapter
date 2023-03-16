@@ -260,6 +260,7 @@ export const adapterResponseJSON = async (request: Request, response: Response) 
         metadataCid: metadataCid,
       },
     };
+    console.log('data complete', data);
     // const data = { ok: 'ok', trustedSha256sum, finalData };
     // const data = { ok: 'ok' };
     response.status(200).json(data);
