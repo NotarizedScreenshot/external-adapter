@@ -182,7 +182,7 @@ export const adapterResponseJSON = async (request: Request, response: Response) 
     const watermarkedScreenshotCid =
       watermarkedImageBuffer && (await uploadBufferToNFTStorage(client, watermarkedImageBuffer));
 
-    // // console.log('screenshotCid', screenshotCid);
+    console.log('screenshotCid', screenshotCid);
     // // console.log('watermarkedScreenshotCid', watermarkedScreenshotCid);
     // // console.log('userImageUploadedData', userImageUploadedData);
     // // console.log('cardImagesData', cardImagesData);
