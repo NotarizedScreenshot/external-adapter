@@ -1,0 +1,14 @@
+# Build directories
+dist/
+.cache/
+.git/
+
+# Data dirs
+data/
+
+# dependencies
+/node_modules
+
+# System Files
+.DS_Store
+Thumbs.db

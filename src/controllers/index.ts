@@ -71,7 +71,10 @@ const getScreenShot = async (request: Request, response: Response) => {
       console.log('error: invalid url');
       return response.status(422).json({ error: 'invalid url' });
     }
-    const browser = await puppeteer.launch();
+    // const browser = await puppeteer.launch();
+    const browser = await puppeteer.launch({
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    });
     const page = await browser.newPage();
     const url = tweetUrl;
     const clientCode = request.body.clientCode;
@@ -299,8 +302,10 @@ export const getMetaData = async (request: Request, response: Response) => {
 };
 
 export const getTweetData = async (request: Request, response: Response) => {
+  console.log('get Tweet data');
   try {
     const { tweetId } = request.query as { tweetId: string };
+
     if (!isValidBigInt(tweetId)) {
       console.log('error: invalid tweet id');
       return response.status(422).json({ error: 'invalid tweet id' });
@@ -337,8 +342,10 @@ export const getTweetData = async (request: Request, response: Response) => {
         response.status(422).json({ error: error.message });
         return;
       }
+      console.log('error', error);
       return response.status(502).json({ error: error.message });
     }
+    console.log('error', error);
     response.status(502).json({ error: `Unknown error ${error}` });
   }
 };
