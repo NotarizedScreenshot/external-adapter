@@ -1,6 +1,6 @@
 # Build directories
 dist/
-
+.cache
 # Data dirs
 data/
 
