@@ -14,8 +14,8 @@ const WATERMARK_DEFAULT_HEIGHT = 1000;
 const WATERMARK_IMAGE_PATH = path.resolve(processPWD, 'public/images/stamp_t.png');
 const META_STAMP_FONT = '10px monospace';
 const META_STAMP_COLOR = 'red';
-const META_STAMP_CANVAS_DEFAULT_WIDTH = 900;
-const META_STAMP_CANVAS_DEFAULT_HEIGHT = 1000;
+const META_STAMP_CANVAS_DEFAULT_WIDTH = 450;
+const META_STAMP_CANVAS_DEFAULT_HEIGHT = 600;
 
 export const makeStampedImage = async (srcImgPath: string, metaDataPath: string) => {
   try {

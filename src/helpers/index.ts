@@ -154,6 +154,10 @@ export const pngPathFromTweetId = (tweetId: string): string => {
   return `${tweetId}.png`;
 };
 
+export const pngPathStampedFromTweetId = (tweetId: string): string => {
+  return `${tweetId}-stamped.png`;
+};
+
 export const pngPathStampedFromUrl = (url: string, signCode: string): string => {
   return `${url.split(':').join('_').split('/').join('_').split('.').join('_')}_stamp.png`;
 };

@@ -10,6 +10,7 @@ import {
   uploadBufferToNFTStorage,
   processMetaData,
   tweeetDataToAttributes,
+  pngPathStampedFromTweetId,
 } from '../helpers';
 import path from 'path';
 import { processPWD } from '../prestart';
@@ -31,6 +32,11 @@ export const adapterResponseJSON = async (request: Request, response: Response) 
     const tweetDataPath = path.resolve(processPWD, 'data', tweetDataPathFromTweetId(tweetId));
     const metadataPath = path.resolve(processPWD, 'data', metadataPathFromTweetId(tweetId));
     const screenshotPath = path.resolve(processPWD, 'data', pngPathFromTweetId(tweetId));
+    const watermarkedSreenshotPath = path.resolve(
+      processPWD,
+      'data',
+      pngPathStampedFromTweetId(tweetId),
+    );
 
     const client = new NFTStorage({ token: process.env.NFT_STORAGE_TOKEN! });
 
@@ -44,56 +50,77 @@ export const adapterResponseJSON = async (request: Request, response: Response) 
     const { body, user } = tweetData;
     const { card, media } = body;
 
-    const mediaFilesUploadedData = media
-      ? await Promise.all(
-          media.map(async ({ src }) => await uploadToNFTStorageWithHash(client, src)),
-        )
-      : [];
+    //UPLOADING TIME EXCEEDS CHAINLINK NODE TIMEOUT (15s). UNCOMMENT WHEN SOLVE// -- START
+    // const mediaFilesUploadedData = media
+    //   ? await Promise.all(
+    //       media.map(async ({ src }) => await uploadToNFTStorageWithHash(client, src)),
+    //     )
+    //   : [];
+    //UPLOADING TIME EXCEEDS CHAINLINK NODE TIMEOUT (15s). UNCOMMENT WHEN SOLVE// -- END
 
     const cardImageKeys =
       card &&
       (Object.keys(card).filter((key) =>
         ['thumbnail_image_original', 'player_image_original'].includes(key),
       ) as [keyof ITweetCard]);
+    //UPLOADING TIME EXCEEDS CHAINLINK NODE TIMEOUT (15s). UNCOMMENT WHEN SOLVE// -- START
+    // const cardImagesData = cardImageKeys
+    //   ? await Promise.all(
+    //       cardImageKeys?.map(async (key) => await uploadToNFTStorageWithHash(client, card![key])),
+    //     )
+    //   : [];
+    //UPLOADING TIME EXCEEDS CHAINLINK NODE TIMEOUT (15s). UNCOMMENT WHEN SOLVE// -- END
 
-    const cardImagesData = cardImageKeys
-      ? await Promise.all(
-          cardImageKeys?.map(async (key) => await uploadToNFTStorageWithHash(client, card![key])),
-        )
-      : [];
+    //UPLOADING TIME EXCEEDS CHAINLINK NODE TIMEOUT (15s). UNCOMMENT WHEN SOLVE// -- START
+    // const userImageUploadedData =
+    //   user.profile_image_url_https &&
+    //   (await uploadToNFTStorageWithHash(client, user.profile_image_url_https));
+    //UPLOADING TIME EXCEEDS CHAINLINK NODE TIMEOUT (15s). UNCOMMENT WHEN SOLVE// -- END
 
-    const userImageUploadedData =
-      user.profile_image_url_https &&
-      (await uploadToNFTStorageWithHash(client, user.profile_image_url_https));
+    // const screenshotBuffer = await fs.readFile(screenshotPath);
+    // const screenshotHashSum = getTrustedHashSum(screenshotBuffer);
 
-    const screenshotBuffer = await fs.readFile(screenshotPath);
-    const screenshotHashSum = getTrustedHashSum(screenshotBuffer);
+    // const watermarkedImageBuffer = await fs.readFile(watermarkedSreenshotPath);
 
-    const watermarkedImageBuffer = await makeStampedImage(screenshotPath, metadataPath);
-    const watermarkedImageHashSum =
-      watermarkedImageBuffer && getTrustedHashSum(watermarkedImageBuffer);
+    // const watermarkedImageBuffer = await makeStampedImage(screenshotPath, metadataPath);
+    // const watermarkedImageHashSum =
+    //   watermarkedImageBuffer && getTrustedHashSum(watermarkedImageBuffer);
 
-    const screenshotCid = await uploadBufferToNFTStorage(client, screenshotBuffer);
-    const watermarkedScreenshotCid =
-      watermarkedImageBuffer && (await uploadBufferToNFTStorage(client, watermarkedImageBuffer));
+    // const screenshotCid = await uploadBufferToNFTStorage(client, screenshotBuffer);
+    // const watermarkedScreenshotCid =
+    //   watermarkedImageBuffer && (await uploadBufferToNFTStorage(client, watermarkedImageBuffer));
+
+    const cids = await Promise.all(
+      [watermarkedSreenshotPath, screenshotPath].map(async (path) => {
+        const buffer = await fs.readFile(path);
+        const hashSum = getTrustedHashSum(buffer);
+        const cid = await uploadBufferToNFTStorage(client, buffer);
+        return { path, cid, hashSum };
+      }),
+    );
+
+    // console.log(cids);
 
     const finalData = {
       screenshot: {
-        cid: screenshotCid,
-        hashSum: screenshotHashSum,
+        cid: cids[0].cid,
+        // hashSum: screenshotHashSum,
+        hashSum: cids[0].hashSum,
       },
       watermarkedScreenshot: {
-        cid: watermarkedScreenshotCid,
-        hashSum: watermarkedImageHashSum,
+        // cid: watermarkedScreenshotCid,
+        cid: cids[1].cid,
+        hashSum: cids[1].hashSum,
       },
-      media: [userImageUploadedData, ...cardImagesData, ...mediaFilesUploadedData],
+      // media: [userImageUploadedData, ...cardImagesData, ...mediaFilesUploadedData],
       tweetRawData,
       parsedTweetData: tweetData,
       metadata,
     };
 
     const finalTrustedDataToHash = {
-      screenShotHash: screenshotHashSum,
+      // screenShotHash: screenshotHashSum,
+      screenShotHash: cids[0].hashSum,
       tweetRawData,
       parsedTweetData: tweetData,
       metadata,
@@ -104,7 +131,8 @@ export const adapterResponseJSON = async (request: Request, response: Response) 
     const attributes = [...tweeetDataToAttributes(tweetData), ...metadataToAttirbutes(metadata)];
 
     const name = 'Notarized Screenshot 0x' + trustedSha256sum;
-    const image = 'ipfs://' + watermarkedScreenshotCid;
+    const image = 'ipfs://' + cids[1].cid;
+    // const image = 'ipfs://' + screenshotCid;
     // const image = 'ipfs://' + '';
     const ts = Date.now();
     const time = new Date(ts).toUTCString();
@@ -136,7 +164,10 @@ export const adapterResponseJSON = async (request: Request, response: Response) 
       data: {
         url: tweetId,
         sha256sum: BigInt('0x' + trustedSha256sum).toString(),
-        cid: String(watermarkedScreenshotCid),
+        // cid: String(watermarkedScreenshotCid),
+        // cid: String('screenshotCid'),
+        cid: String(cids[1].cid),
+
         metadataCid: metadataCid,
       },
     };
