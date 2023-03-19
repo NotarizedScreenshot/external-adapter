@@ -52,6 +52,7 @@ const getIndexPage = (_: Request, response: Response) => {
 // metadataPathFromUrl are not using client data in order to make available only the last version of the same URL
 const getScreenShot = async (request: Request, response: Response) => {
   try {
+    console.log('run getScreenShot', new Date().toString());
     const { tweetId } = request.body;
     if (!isValidBigInt(tweetId)) {
       console.log('error: invalid tweet id');
@@ -62,13 +63,14 @@ const getScreenShot = async (request: Request, response: Response) => {
       console.log('error: invalid url');
       return response.status(422).json({ error: 'invalid url' });
     }
-    // const browser = await puppeteer.launch();
     const browser = await puppeteer.launch({
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
     const page = await browser.newPage();
     const url = tweetUrl;
     const clientCode = request.body.clientCode;
+
+    console.log('url', url);
 
     page.on('response', async (pupperTerresponse: HTTPResponse) => {
       try {
@@ -217,7 +219,7 @@ export const getMetaData = async (request: Request, response: Response) => {
 };
 
 export const getTweetData = async (request: Request, response: Response) => {
-  console.log('get Tweet data');
+  console.log('get getTweetData', new Date().toString());
   try {
     const { tweetId } = request.query as { tweetId: string };
 
