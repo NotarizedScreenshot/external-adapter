@@ -118,15 +118,19 @@ export const adapterResponseJSON = async (request: Request, response: Response) 
       metadata,
     };
 
+    // console.log('screenshothash', cids[1].hashSum);
+    // console.log('screenshothash', screenshotHashSum);
+
     const finalTrustedDataToHash = {
       // screenShotHash: screenshotHashSum,
-      screenShotHash: cids[0].hashSum,
+      screenShotHash: cids[1].hashSum,
       tweetRawData,
       parsedTweetData: tweetData,
       metadata,
     };
 
     const trustedSha256sum = getTrustedHashSum(JSON.stringify(finalTrustedDataToHash));
+    console.log('trustedSha256sum', trustedSha256sum);
 
     const attributes = [...tweeetDataToAttributes(tweetData), ...metadataToAttirbutes(metadata)];
 
