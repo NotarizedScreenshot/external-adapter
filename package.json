@@ -14,7 +14,6 @@
   },
   "dependencies": {
     "axios": "^0.27.2",
-    "busboy": "^1.6.0",
     "canvas": "^2.11.0",
     "crypto-js": "^4.1.1",
     "dotenv": "^16.0.3",
