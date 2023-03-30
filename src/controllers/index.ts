@@ -18,7 +18,7 @@ import {
   pngPathStampedFromUrl,
   metadataPathFromUrl,
   metadataPathFromTweetId,
-  isValidBigInt,
+  isValidUint64,
   makeTweetUrlWithId,
   pngPathFromTweetId,
   tweetDataPathFromTweetId,
@@ -53,7 +53,7 @@ const getScreenShot = async (request: Request, response: Response) => {
   try {
     // console.log('process.env', process.env.NODE_ENV);
     const { tweetId } = request.body;
-    if (!isValidBigInt(tweetId)) {
+    if (!isValidUint64(tweetId)) {
       console.log('error: invalid tweet id');
       return response.status(422).json({ error: 'invalid tweet id' });
     }
@@ -273,7 +273,7 @@ export const adapterResponseJSON = async (request: Request, response: Response) 
 export const getMetaData = async (request: Request, response: Response) => {
   try {
     const { tweetId } = request.query as { tweetId: string };
-    if (!isValidBigInt(tweetId)) {
+    if (!isValidUint64(tweetId)) {
       console.log('error: invalid tweet id');
       return response.status(422).json({ error: 'invalid tweet id' });
     }
@@ -297,7 +297,7 @@ export const getTweetData = async (request: Request, response: Response) => {
   try {
     const { tweetId } = request.query as { tweetId: string };
 
-    if (!isValidBigInt(tweetId)) {
+    if (!isValidUint64(tweetId)) {
       console.log('error: invalid tweet id');
       return response.status(422).json({ error: 'invalid tweet id' });
     }
@@ -342,6 +342,8 @@ export const getTweetData = async (request: Request, response: Response) => {
 };
 
 export * from './getIndexPage';
+export * from './getScreenShot';
+export * from './adapterResponse';
 
 export default {
   getStampedImage,

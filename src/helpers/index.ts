@@ -118,10 +118,11 @@ export const tweetDataPathFromTweetId = (tweetId: string): string => {
   return `${tweetId}-tweet.json`;
 };
 
-export const isValidBigInt = (data: string) => {
-  if (!data || data.length === 0) return false;
-  if (!/^\d+$/.test(data)) return false;
-  if (BigInt(data) > BigInt(2 ** 64 - 1)) return false;
+export const isValidUint64 = (data: string | number) => {
+  const stringified = String(data);
+  if (!stringified || stringified.length === 0) return false;
+  if (!/^\d+$/.test(stringified)) return false;
+  if (BigInt(stringified) > BigInt(2 ** 64 - 1)) return false;
   return true;
 };
 
