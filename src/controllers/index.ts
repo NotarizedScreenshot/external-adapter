@@ -18,7 +18,7 @@ import {
   pngPathStampedFromUrl,
   metadataPathFromUrl,
   metadataPathFromTweetId,
-  isValidBigInt,
+  isValidUint64,
   makeTweetUrlWithId,
   pngPathFromTweetId,
   tweetDataPathFromTweetId,
@@ -45,24 +45,15 @@ const META_STAMP_CANVAS_DEFAULT_HEIGHT = 1000;
 const DEFAULT_USERAGENT =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36';
 
-const getIndexPage = (_: Request, response: Response) => {
-  try {
-    response.set('Content-Type', 'text/html');
-    response.status(200).sendFile(path.resolve(process.env.PWD!, 'public/index.html'));
-  } catch (error) {
-    console.log(error);
-    response.status(502).send(error);
-  }
-};
-
 //const meta: { [id: string]: any }[] = [];
 
 // pngPathFromUrl,
 // metadataPathFromUrl are not using client data in order to make available only the last version of the same URL
 const getScreenShot = async (request: Request, response: Response) => {
   try {
+    // console.log('process.env', process.env.NODE_ENV);
     const { tweetId } = request.body;
-    if (!isValidBigInt(tweetId)) {
+    if (!isValidUint64(tweetId)) {
       console.log('error: invalid tweet id');
       return response.status(422).json({ error: 'invalid tweet id' });
     }
@@ -282,7 +273,7 @@ export const adapterResponseJSON = async (request: Request, response: Response) 
 export const getMetaData = async (request: Request, response: Response) => {
   try {
     const { tweetId } = request.query as { tweetId: string };
-    if (!isValidBigInt(tweetId)) {
+    if (!isValidUint64(tweetId)) {
       console.log('error: invalid tweet id');
       return response.status(422).json({ error: 'invalid tweet id' });
     }
@@ -306,7 +297,7 @@ export const getTweetData = async (request: Request, response: Response) => {
   try {
     const { tweetId } = request.query as { tweetId: string };
 
-    if (!isValidBigInt(tweetId)) {
+    if (!isValidUint64(tweetId)) {
       console.log('error: invalid tweet id');
       return response.status(422).json({ error: 'invalid tweet id' });
     }
@@ -350,8 +341,11 @@ export const getTweetData = async (request: Request, response: Response) => {
   }
 };
 
+export * from './getIndexPage';
+export * from './getScreenShot';
+export * from './adapterResponse';
+
 export default {
-  getIndexPage,
   getStampedImage,
   getScreenShot,
   adapterResponseJSON,
