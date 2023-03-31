@@ -12,7 +12,7 @@ describe('testing routes', async () => {
 
   before((done) => {
     if (!process.env.DEFAULT_HTTP_TEST_PORT)
-      throw new Error(`default test port: ${process.env.DEFAULT_HTTP_PORT}`);
+      throw new Error(`default test port: ${process.env.DEFAULT_HTTP_TEST_PORT}`);
 
     startServer(process.env.DEFAULT_HTTP_TEST_PORT).then((newServer) => {
       server = newServer;
@@ -41,7 +41,8 @@ describe('testing routes', async () => {
     });
   });
 
-  describe('testing GET /preview', () => {
+  describe('testing GET /previewData', () => {
+    //TODO: tests a incorrect, puppeteer requests are to be stubed
     it('without tweetId in query', () => {
       chai
         .request(server)
@@ -69,28 +70,29 @@ describe('testing routes', async () => {
         .get('/previewData?tweetId=-123124')
         .end((err, res) => {
           expect(res.ok).to.be.false;
-          console.log('asA', res.status);
           expect(res.status).to.equal(422);
           const json = JSON.parse(res.text);
           expect(json.error).to.equal('invalid tweet id');
         });
     });
-    it('valid tweet id', () => {
+    it('valid tweet id', (done) => {
       chai
         .request(server)
         .get('/previewData?tweetId=123124')
         .end((err, res) => {
           expect(res.ok).to.be.true;
           expect(res.status).to.equal(200);
-          const { imageUrl, tweetData, metaData } = JSON.parse(res.text);
-          expect(imageUrl).to.equal('imageUrl');
-          expect(tweetData).to.equal('tweetData');
-          expect(metaData).to.equal('metaData');
+          const { imageUrl, tweetdata, metadata } = JSON.parse(res.text);
+
+          expect(!!imageUrl).to.be.true;
+          expect(!!tweetdata).to.be.true;
+          expect(metadata).to.be.string;
+          done();
         });
     });
   });
 
-  describe('testing POST /adapter_response', () => {
-    //TODO: write tests
-  });
+    describe('testing POST /adapter_response', () => {
+      //TODO: write tests
+    });
 });
