@@ -41,9 +41,12 @@ describe('testing puppeteer', async () => {
 
     it('not existing url page', async () => {
       const page = await browser.newPage();
-      expect ((async () => {
-        const p = await page.goto('https://frrfgrtgtrgtg.rtgtg/', { waitUntil: 'networkidle0' }).catch(e => { throw(new Error()) });
-      })).to.throw()
+      const p = await page.goto('https://frrfgrtgtrgtg.rtgtg/', { waitUntil: 'networkidle0' }).catch(e => {});
+      expect(p).to.equal(undefined)
+
+      // expect ((async () => {
+      //   const p = await page.goto('https://frrfgrtgtrgtg.rtgtg/', { waitUntil: 'networkidle0' }).catch(e => { throw (new Error() )});
+      // })).to.throw()
       
     });
 
