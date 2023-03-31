@@ -25,7 +25,7 @@ describe('testing puppeteer', async () => {
   describe('testing Browser is on', () => {
     it('browser already launched', (done) => {
       expect(browser.isConnected()).to.true;
-      expect(browser.process).to.equal(null);
+      expect(browser.process()).to.equal(null);
       
       done();
     });
@@ -43,7 +43,6 @@ describe('testing puppeteer', async () => {
       const page = await browser.newPage();
       expect ((async () => {
         await page.goto('https://frrfgrtgtrgtg.rtgtg/', { waitUntil: 'networkidle0' });
-        expect(page.url()).to.equal('https://frrfgrtgtrgtg.rtgtg/');  
       })).to.throw(Error)
       
     });
