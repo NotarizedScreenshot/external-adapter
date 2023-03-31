@@ -30,26 +30,25 @@ describe('testing puppeteer', async () => {
   });
 
   describe('loading pages', () => {
-
+    const page = await browser.newPage();
     it('empty page', async () => {
-      const page = await browser.newPage();
-      expect page.url().to.equal('');  
+      expect(page.url()).to.equal('');  
       // expect(res.text).to.contain('<html>');
     });
 
     it('some page', async () => {
       const page = await browser.newPage();
-      expect page.url().to.equal('');  
+      expect(page.url()).to.equal('');  
     });
 
     it('some page 2', async () => {
       await page.goto('https://developer.mozilla.org/', { waitUntil: 'networkidle0' });
-      expect page.url().to.equal('https://developer.mozilla.org/');  
+      expect(page.url()).to.equal('https://developer.mozilla.org/');  
     });
 
     it('twitter is accessible', async () => {
       await page.goto('https://twitter.com/', { waitUntil: 'networkidle0' });
-      expect page.url().to.equal('https://twitter.com/');  
+      expect(page.url()).to.equal('https://twitter.com/');  
     });
 
   });
