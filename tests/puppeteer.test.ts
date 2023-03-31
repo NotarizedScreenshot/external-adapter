@@ -29,9 +29,10 @@ describe('testing puppeteer', async () => {
     });
   });
 
-  describe('loading pages', () => {
-    const page = await browser.newPage();
+  describe('loading pages', async () => {
+    
     it('empty page', async () => {
+      const page = await browser.newPage();
       expect(page.url()).to.equal('');  
       // expect(res.text).to.contain('<html>');
     });
@@ -42,11 +43,13 @@ describe('testing puppeteer', async () => {
     });
 
     it('some page 2', async () => {
+      const page = await browser.newPage();
       await page.goto('https://developer.mozilla.org/', { waitUntil: 'networkidle0' });
       expect(page.url()).to.equal('https://developer.mozilla.org/');  
     });
 
     it('twitter is accessible', async () => {
+      const page = await browser.newPage();
       await page.goto('https://twitter.com/', { waitUntil: 'networkidle0' });
       expect(page.url()).to.equal('https://twitter.com/');  
     });
