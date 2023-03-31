@@ -35,13 +35,14 @@ describe('testing puppeteer', async () => {
     
     it('empty page', async () => {
       const page = await browser.newPage();
-      expect(page.url()).to.equal('');  
+      expect(page.url()).to.equal('about:blank');  
       // expect(res.text).to.contain('<html>');
     });
 
-    it('some page', async () => {
+    it('not existing url page', async () => {
       const page = await browser.newPage();
-      expect(page.url()).to.equal('');  
+      await page.goto('https://frrfgrtgtrgtg.rtgtg/', { waitUntil: 'networkidle0' });
+      expect(page.url()).to.equal('https://frrfgrtgtrgtg.rtgtg/');  
     });
 
     it('some page 2', async () => {
