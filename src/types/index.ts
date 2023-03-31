@@ -44,3 +44,13 @@ export interface ITweetData {
   user: ITweetUser;
   details: ITweetDetails;
 }
+
+export type ITweetRawData = string;
+
+export interface IGetScreenshotResponseData {
+  imageUrl: string | null;
+  metadata: string | null;
+  tweetdata: string | null;
+}
+
+export type ITweetPageMetaData = [IMetadata | null, ITweetRawData | null];

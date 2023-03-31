@@ -1,6 +1,18 @@
 import { Request, Response } from 'express';
-import { isValidUint64, makeTweetUrlWithId } from '../helpers';
+import puppeteer from 'puppeteer';
+import {
+  getMetaDataPromise,
+  getTweetDataPromise,
+  isValidUint64,
+  isValidUrl,
+  makeImageBase64UrlfromBuffer,
+  makeTweetUrlWithId,
+  pngPathFromTweetId,
+} from '../helpers';
+import { puppeteerDefaultConfig } from '../config';
 import path from 'path';
+import { processPWD } from '../prestart';
+import { IGetScreenshotResponseData, IMetadata, ITweetPageMetaData, ITweetRawData } from '../types';
 
 export const getScreenShot = async (request: Request, response: Response) => {
   try {
@@ -13,15 +25,69 @@ export const getScreenShot = async (request: Request, response: Response) => {
       console.log('invalid');
       return response.status(422).json({ error: 'invalid tweet id' });
     }
-    console.log('valid');
     const tweetUrl = makeTweetUrlWithId(tweetId);
 
-    //TODO: write controller logic
-    const imageUrl: string = 'imageUrl';
-    const metaData: string = 'metaData';
-    const tweetData: string = 'tweetData';
+    if (!isValidUrl(tweetUrl)) {
+      console.log('error: invalid url');
+      return response.status(422).json({ error: 'invalid url' });
+    }
 
-    response.status(200).send({ imageUrl, metaData, tweetData });
+    const browser = await puppeteer.launch({
+      args: puppeteerDefaultConfig.launch.args,
+    });
+
+    const page = await browser.newPage();
+
+    const screenshotPath = path.resolve(processPWD, 'data', pngPathFromTweetId(tweetId));
+
+    await page.setViewport({
+      ...puppeteerDefaultConfig.viewport,
+      deviceScaleFactor: 1,
+    });
+    await page.setUserAgent(puppeteerDefaultConfig.userAgent);
+    const screenShotPromise = page
+      .goto(tweetUrl, puppeteerDefaultConfig.page.goto)
+      .then(async () => {
+        const screenshotImageBuffer: Buffer = await page.screenshot({
+          path: screenshotPath,
+        });
+
+        return makeImageBase64UrlfromBuffer(screenshotImageBuffer);
+      });
+
+    const fetchedData = await Promise.allSettled<string>([
+      getTweetDataPromise(page, tweetId),
+      getMetaDataPromise(page, tweetUrl),
+      screenShotPromise,
+    ]);
+
+    const responseData = fetchedData.reduce<IGetScreenshotResponseData>(
+      (acc, val, index) => {
+        const orderedKeys: (keyof IGetScreenshotResponseData)[] = [
+          'tweetdata',
+          'metadata',
+          'imageUrl',
+        ];
+
+        if (val.status === 'fulfilled') {
+          acc[orderedKeys[index]] = val.value;
+        }
+        if (val.status === 'rejected') {
+          acc[orderedKeys[index]] = null;
+        }
+        return acc;
+      },
+      {
+        imageUrl: null,
+        metadata: null,
+        tweetdata: null,
+      },
+    );
+
+    browser.close();
+
+    response.set('Content-Type', 'application/json');
+    response.status(200).send(responseData);
   } catch (error) {
     console.log(`controller error:  ${error}`);
     if (error instanceof Error) {

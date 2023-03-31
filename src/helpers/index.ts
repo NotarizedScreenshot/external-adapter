@@ -128,3 +128,9 @@ export const isValidUint64 = (data: string | number) => {
 
 export const makeTweetUrlWithId = (tweetId: string): string =>
   `https://twitter.com/twitter/status/${tweetId}`;
+
+export const makeImageBase64UrlfromBuffer = (buffer: Buffer, filetype: string = 'png') => {
+  return `data:image/${filetype};base64,` + buffer.toString('base64');
+};
+
+export * from './handlers';
