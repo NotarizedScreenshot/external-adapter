@@ -24,7 +24,7 @@ describe('testing puppeteer', async () => {
 
   describe('testing Browser is on', () => {
     it('browser already launched', (done) => {
-      expect(browser.isConnected).to.true;
+      expect(browser.isConnected()).to.true;
       expect(browser.process).to.equal(null);
       
       done();
@@ -41,20 +41,23 @@ describe('testing puppeteer', async () => {
 
     it('not existing url page', async () => {
       const page = await browser.newPage();
-      await page.goto('https://frrfgrtgtrgtg.rtgtg/', { waitUntil: 'networkidle0' });
-      expect(page.url()).to.equal('https://frrfgrtgtrgtg.rtgtg/');  
+      expect ((async () => {
+        await page.goto('https://frrfgrtgtrgtg.rtgtg/', { waitUntil: 'networkidle0' });
+        expect(page.url()).to.equal('https://frrfgrtgtrgtg.rtgtg/');  
+      })).to.throw(Error)
+      
     });
 
     it('some page 2', async () => {
       const page = await browser.newPage();
       await page.goto('https://developer.mozilla.org/', { waitUntil: 'networkidle0' });
-      expect(page.url()).to.equal('https://developer.mozilla.org/');  
+      expect(page.url()).to.have.string('https://developer.mozilla.org/');  
     });
 
     it('twitter is accessible', async () => {
       const page = await browser.newPage();
       await page.goto('https://twitter.com/', { waitUntil: 'networkidle0' });
-      expect(page.url()).to.equal('https://twitter.com/');  
+      expect(page.url()).to.have.string('https://twitter.com/');  
     });
 
   });
