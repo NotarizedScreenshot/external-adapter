@@ -8,11 +8,13 @@ dotenv.config({ path: process.env.PWD + '/config.env' });
 describe('testing puppeteer', async () => {
   let browser: Browser;
 
-  before(async (done) => {
-    browser = await puppeteer.launch({
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
-    done()
+  before((done) => {
+    (async () => {
+      browser = await puppeteer.launch({
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      })
+      done()
+    })();
   });
 
   after((done) => {
