@@ -2,37 +2,28 @@ import path from 'path';
 import fs from 'fs/promises';
 import fss from 'fs';
 import { Request, Response } from 'express';
-import puppeteer, { HTTPResponse } from 'puppeteer';
 import enchex from 'crypto-js/enc-hex';
 import sha256 from 'crypto-js/sha256';
 import CryptoJS from 'crypto-js';
 import { NFTStorage, Blob as NFTBlob } from 'nft.storage';
 import {
-  getHostWithoutWWW,
   trimUrl,
-  isValidUrl,
-  getDnsInfo,
   metadataToAttirbutes,
-  getStampMetaString,
   pngPathFromUrl,
   pngPathStampedFromUrl,
   metadataPathFromUrl,
   metadataPathFromTweetId,
   isValidBigInt,
-  makeTweetUrlWithId,
-  pngPathFromTweetId,
   tweetDataPathFromTweetId,
 } from '../helpers';
 import { makeStampedImage } from '../helpers/images';
 
 import { IMetadata, ITweetData } from 'types';
 import { processPWD } from '../prestart';
-import images from 'images';
-import { createCanvas } from 'canvas';
 import { createTweetData } from '../models';
 
-const VIEWPORT_DEFAULT_WIDTH = 1000;
-const VIEWPORT_DEFAULT_HEIGHT = 1000;
+import {puppeteerScreenshot} from '../helpers/puppeteerScreenshot'
+
 
 const WATERMARK_DEFAULT_WIDTH = 818;
 const WATERMARK_DEFAULT_HEIGHT = 1000;
@@ -42,8 +33,6 @@ const META_STAMP_COLOR = 'red';
 const META_STAMP_CANVAS_DEFAULT_WIDTH = 900;
 const META_STAMP_CANVAS_DEFAULT_HEIGHT = 1000;
 
-const DEFAULT_USERAGENT =
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36';
 
 const getIndexPage = (_: Request, response: Response) => {
   try {
@@ -55,92 +44,19 @@ const getIndexPage = (_: Request, response: Response) => {
   }
 };
 
-//const meta: { [id: string]: any }[] = [];
-
-// pngPathFromUrl,
-// metadataPathFromUrl are not using client data in order to make available only the last version of the same URL
 const getScreenShot = async (request: Request, response: Response) => {
+  console.log('getScreenShot:', request.body)
+
   try {
-    const { tweetId } = request.body;
+    const { tweetId } : {tweetId: string } = request.body;
+    console.log('getScreenShot: tweetId = ', tweetId)
+
     if (!isValidBigInt(tweetId)) {
-      console.log('error: invalid tweet id');
-      return response.status(422).json({ error: 'invalid tweet id' });
+      console.log('getScreenShot: error: invalid tweet id ', tweetId);
+      return response.status(422).json({ error: `invalid tweet id ${tweetId}` });
     }
-    const tweetUrl = makeTweetUrlWithId(tweetId);
-    if (!isValidUrl(tweetUrl)) {
-      console.log('error: invalid url');
-      return response.status(422).json({ error: 'invalid url' });
-    }
-    // const browser = await puppeteer.launch();
-    const browser = await puppeteer.launch({
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
-    const page = await browser.newPage();
-    const url = tweetUrl;
-    const clientCode = request.body.clientCode;
 
-    page.on('response', async (pupperTerresponse: HTTPResponse) => {
-      try {
-        const responseUrl = pupperTerresponse.url();
-        const trimmedResponseUrl = trimUrl(responseUrl);
-
-        if (responseUrl.match(/TweetDetail/g)) {
-          const responseData = await pupperTerresponse.json();
-          const responseDataString = JSON.stringify(responseData.data);
-
-          if (responseDataString.includes(`tweet-${request.body.tweetId}`)) {
-            await fs.writeFile(
-              path.resolve(processPWD, 'data', tweetDataPathFromTweetId(tweetId)),
-              responseDataString,
-            );
-          }
-        }
-
-        if (trimmedResponseUrl === url) {
-          const headers = pupperTerresponse.headers();
-          const { ip } = pupperTerresponse.remoteAddress();
-          const host = getHostWithoutWWW(url);
-
-          const dnsResult = await getDnsInfo(host, ['+trace', 'any']).catch((e) => {
-            console.log('dns catch', e);
-          });
-          const dns = typeof dnsResult === 'string' ? dnsResult.split('\n') : [];
-
-          // if dns === [], no dns data
-          const meta: IMetadata = {
-            headers,
-            ip: ip || 'n/a',
-            url: responseUrl,
-            dns: { host, data: dns },
-          };
-          await fs.writeFile(
-            path.resolve(processPWD, 'data', metadataPathFromTweetId(tweetId)),
-            JSON.stringify(meta),
-          );
-        }
-      } catch (error) {
-        console.log(`page error:  ${error}`);
-        if (error instanceof Error) {
-          // meta.splice(0, meta.length);
-          // meta.push({ error: { ...error, message: error.message} });
-        }
-      }
-    });
-
-    await page.setViewport({
-      width: VIEWPORT_DEFAULT_WIDTH,
-      height: VIEWPORT_DEFAULT_HEIGHT,
-      deviceScaleFactor: 1,
-    });
-    await page.setUserAgent(DEFAULT_USERAGENT);
-    await page.goto(url, { waitUntil: 'networkidle0' });
-
-    const screenshotPath = path.resolve(processPWD, 'data', pngPathFromTweetId(tweetId));
-
-    const screenshotImageBuffer: Buffer = await page.screenshot({
-      path: screenshotPath,
-    });
-    browser.close();
+    const screenshotImageBuffer = await puppeteerScreenshot(tweetId)
 
     response.set('Content-Type', 'image/png');
     return response.status(200).send(screenshotImageBuffer);
