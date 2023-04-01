@@ -1,5 +1,8 @@
 import { spawn } from 'child_process';
 import { IMetadata, TMetadataAttributes } from 'types';
+import enchex from 'crypto-js/enc-hex';
+import sha256 from 'crypto-js/sha256';
+import CryptoJS from 'crypto-js';
 
 export const getIncludeSubstringElementIndex = (
   array: string[],
@@ -134,3 +137,9 @@ export const makeImageBase64UrlfromBuffer = (buffer: Buffer, filetype: string = 
 };
 
 export * from './handlers';
+
+export const getTrustedHashSum = (data: string | Buffer) =>
+  enchex.stringify(
+    // @ts-ignore
+    sha256(CryptoJS.lib.WordArray.create(data)),
+  );
