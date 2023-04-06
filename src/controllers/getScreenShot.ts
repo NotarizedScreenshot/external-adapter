@@ -16,6 +16,7 @@ import { processPWD } from '../prestart';
 import { IGetScreenshotResponseData, ITweetData, ITweetTimelineEntry } from '../types';
 
 import { createTweetData } from '../models';
+import { makeStampedImage } from '../helpers/images';
 
 export const getScreenShot = async (request: Request, response: Response) => {
   try {
@@ -58,13 +59,13 @@ export const getScreenShot = async (request: Request, response: Response) => {
         return makeImageBase64UrlfromBuffer(screenshotImageBuffer);
       });
 
-    const fetchedData = await Promise.allSettled<string>([
-      getTweetDataPromise(page, tweetId),
-      getMetaDataPromise(page, tweetUrl),
-      screenShotPromise,
-    ]);
-
-    const responseData = fetchedData.reduce<IGetScreenshotResponseData>(
+    const fetchedData = (
+      await Promise.allSettled<string>([
+        getTweetDataPromise(page, tweetId),
+        getMetaDataPromise(page, tweetUrl),
+        screenShotPromise,
+      ])
+    ).reduce<IGetScreenshotResponseData>(
       (acc, val, index) => {
         const orderedKeys: (keyof IGetScreenshotResponseData)[] = [
           'tweetdata',
@@ -86,6 +87,11 @@ export const getScreenShot = async (request: Request, response: Response) => {
         tweetdata: null,
       },
     );
+
+    const screenshotImageUrl = fetchedData.imageUrl;
+    const stampedImageBuffer = await makeStampedImage(screenshotImageUrl!, fetchedData.metadata!);
+    const stampedImageUrl = makeImageBase64UrlfromBuffer(stampedImageBuffer!);
+    const responseData: IGetScreenshotResponseData = { ...fetchedData, imageUrl: stampedImageUrl };
 
     const tweetEntries: ITweetTimelineEntry[] = [];
     const threadEntries: any[] = [];
@@ -143,6 +149,8 @@ export const getScreenShot = async (request: Request, response: Response) => {
     });
 
     const allUrlsToUpload = new Set([...threadsDataToUpload, ...tweetsDataUploaded]);
+    const screenShotsToUpload = { screenshotImageUrl, stampedImageUrl };
+    const metadataToUpload = { metadata: responseData.metadata, tweetData: responseData.tweetdata };
     //// TODO: send somewhere to fetch and upload to IPFS.
     browser.close();
 
