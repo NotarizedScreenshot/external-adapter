@@ -7,6 +7,28 @@ export interface IMetadata {
 
 export type TMetadataAttributes = { trait_type: string; value: string }[];
 
+export interface ITweetResults {
+  legacy: {
+    full_text: string;
+    created_at: string;
+    favorite_count: number;
+    quote_count: number;
+    retweet_count: number;
+    entities: {
+      user_mentions: { screen_name: string }[];
+      urls: { expanded_url: string }[];
+      hashtags: { text: string }[];
+      symbols: { text: string }[];
+    };
+    extended_entities: {
+      media: any;
+    };
+  };
+  views: any;
+  core: any;
+  card: any;
+}
+
 export interface ITweetCard {
   description: string;
   domain: string;
@@ -54,3 +76,17 @@ export interface IGetScreenshotResponseData {
 }
 
 export type ITweetPageMetaData = [IMetadata | null, ITweetRawData | null];
+
+export interface ITweetTimelineEntry {
+  entryId: string;
+  sortIndex: string;
+  content: {
+    entryType: string;
+    itemContent: {
+      itemType: string;
+      tweet_results: {
+        result: ITweetResults;
+      };
+    };
+  };
+}

@@ -1,5 +1,5 @@
 import { spawn } from 'child_process';
-import { IMetadata, TMetadataAttributes } from 'types';
+import { IMetadata, ITweetTimelineEntry, TMetadataAttributes } from '../types';
 import enchex from 'crypto-js/enc-hex';
 import sha256 from 'crypto-js/sha256';
 import CryptoJS from 'crypto-js';
@@ -143,3 +143,42 @@ export const getTrustedHashSum = (data: string | Buffer) =>
     // @ts-ignore
     sha256(CryptoJS.lib.WordArray.create(data)),
   );
+
+export const getTweetResultsFromTweetRawData = (tweetRawDataString: string, tweetId: string) => {
+  try {
+    const tweetRawDataParsed = JSON.parse(tweetRawDataString);
+    const tweetResponseInstructions =
+      tweetRawDataParsed.data['threaded_conversation_with_injections_v2'].instructions;
+
+    const tweetTimeLineEntries = tweetResponseInstructions.find(
+      (el: any) => el.type === 'TimelineAddEntries',
+    ).entries;
+
+    const itemContents = tweetTimeLineEntries.reduce((acc: any, val: any) => {
+      return val.entryId === `tweet-${tweetId}` ? val : acc;
+    }, null).content.itemContent;
+
+    return itemContents.tweet_results.result;
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+};
+
+export const getTweetTimelineEntries = (
+  tweetRawDataString: string,
+): ITweetTimelineEntry[] | null => {
+  try {
+    const tweetRawDataParsed = JSON.parse(tweetRawDataString);
+    const tweetResponseInstructions =
+      tweetRawDataParsed.data['threaded_conversation_with_injections_v2'].instructions;
+
+    const tweetTimeLineEntries: ITweetTimelineEntry[] = tweetResponseInstructions.find(
+      (el: any) => el.type === 'TimelineAddEntries',
+    ).entries;
+    return tweetTimeLineEntries;
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+};

@@ -1,4 +1,9 @@
-import { getDnsInfo, getHostWithoutWWW, trimUrl, tweetDataPathFromTweetId } from '../helpers';
+import {
+  getDnsInfo,
+  getHostWithoutWWW,
+  trimUrl,
+  tweetDataPathFromTweetId,
+} from '../helpers';
 import { HTTPResponse, Page } from 'puppeteer';
 import { IMetadata } from '../types';
 import { DEFAULT_TIMEOUT_MS } from '../config';
@@ -36,19 +41,29 @@ export const getMetaDataPromise = (page: Page, tweetUrl: string) =>
 
 export const getTweetDataPromise = (page: Page, tweetId: string) =>
   new Promise<string>((resolve, reject) => {
-    page.on('response', async (pupperTerresponse: HTTPResponse) => {
-      const responseUrl = pupperTerresponse.url();
-      if (responseUrl.match(/TweetDetail/g)) {
-        const responseData = await pupperTerresponse.text();
+    try {
+      page.on('response', async (pupperTerresponse: HTTPResponse) => {
+        try {
+          const responseUrl = pupperTerresponse.url();
+          
+          if (responseUrl.match(/TweetDetail/g)) {            
+            const responseData = await pupperTerresponse.text();            
 
-        if (responseData.includes(`tweet-${tweetId}`)) {
-          await fs.writeFile(
-            path.resolve(processPWD, 'data', tweetDataPathFromTweetId(tweetId)),
-            responseData,
-          );
-          resolve(responseData);
+            await fs.writeFile(
+              path.resolve(processPWD, 'data', tweetDataPathFromTweetId(tweetId)),
+              responseData,
+            );
+            resolve(responseData);
+          
+          }
+          setTimeout(() => reject('failed to get tweet data'), DEFAULT_TIMEOUT_MS);
+        } catch (error) {
+          console.error(error);
+          reject(null);
         }
-      }
-      setTimeout(() => reject('failed to get tweet data'), DEFAULT_TIMEOUT_MS);
-    });
+      });
+    } catch (error) {
+      console.error(error);
+      reject(null);
+    }
   });

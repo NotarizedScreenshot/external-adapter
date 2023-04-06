@@ -2,44 +2,29 @@ import { Request, Response } from 'express';
 import puppeteer from 'puppeteer';
 import {
   getMetaDataPromise,
-  getTrustedHashSum,
   getTweetDataPromise,
+  getTweetTimelineEntries,
   isValidUint64,
   isValidUrl,
   makeImageBase64UrlfromBuffer,
   makeTweetUrlWithId,
   pngPathFromTweetId,
-  tweetDataPathFromTweetId,
 } from '../helpers';
 import { puppeteerDefaultConfig } from '../config';
 import path from 'path';
 import { processPWD } from '../prestart';
-import { IGetScreenshotResponseData, IMetadata, ITweetPageMetaData, ITweetRawData } from '../types';
+import { IGetScreenshotResponseData, ITweetData, ITweetTimelineEntry } from '../types';
 
-// import Hash from 'ipfs-only-hash';
-import { NFTStorage, Blob as NFTBlob } from 'nft.storage';
-
-// import CID from 'cids';
-// import multihashing from 'multihashing-async';
-
-// import multiformats from 'multiformats';
-// import { sha256 } from 'multiformats/hashes/sha2';
-// import { sha256 as hasher } from 'multiformats/hashes/sha2';
-// import * as Block from 'multiformats/block';
-// import * as codec from '@ipld/dag-cbor';
-import fs from 'fs/promises';
-import { CID } from 'multiformats/cid';
-import { sha256 } from 'multiformats/hashes/sha2';
+import { createTweetData } from '../models';
 
 export const getScreenShot = async (request: Request, response: Response) => {
   try {
     const { tweetId } = request.query as {
       tweetId: string;
     };
-    console.log('tweetId', tweetId);
-    console.log('tweetId', isValidUint64(tweetId));
+
     if (!isValidUint64(tweetId)) {
-      console.log('invalid');
+      console.error('invalid tweeetId');
       return response.status(422).json({ error: 'invalid tweet id' });
     }
     const tweetUrl = makeTweetUrlWithId(tweetId);
@@ -62,6 +47,7 @@ export const getScreenShot = async (request: Request, response: Response) => {
       deviceScaleFactor: 1,
     });
     await page.setUserAgent(puppeteerDefaultConfig.userAgent);
+
     const screenShotPromise = page
       .goto(tweetUrl, puppeteerDefaultConfig.page.goto)
       .then(async () => {
@@ -101,52 +87,63 @@ export const getScreenShot = async (request: Request, response: Response) => {
       },
     );
 
-    const metadataToSave = {
-      tweetdata: responseData.tweetdata,
-      metadata: responseData.metadata,
-    };
+    const tweetEntries: ITweetTimelineEntry[] = [];
+    const threadEntries: any[] = [];
+    const responseTweetEntries = getTweetTimelineEntries(responseData.tweetdata!);
+    for (const tweetEntry of responseTweetEntries!) {
+      if (tweetEntry.entryId.includes('tweet-')) tweetEntries.push(tweetEntry);
+      if (tweetEntry.entryId.includes('conversationthread-')) threadEntries.push(tweetEntry);
+    }
 
-    // console.log(metadataToSave);
+    const tweetsData = tweetEntries.map((entry) => {
+      console.log(entry.content.itemContent.tweet_results.result.legacy);
+      return createTweetData(entry.content.itemContent.tweet_results.result);
+    });
 
-    //// TEXT
-    const text = await fs.readFile(
-      path.resolve(processPWD, 'data', 'test', tweetDataPathFromTweetId(tweetId)),
-    );
-    const client = new NFTStorage({ token: process.env.NFT_STORAGE_TOKEN! });
+    const threadsData = threadEntries.map((entry) => {
+      return {
+        entryId: entry.entryId,
+        items: entry.content.items
+          .filter((item: any) => item.item.itemContent.itemType === 'TimelineTweet')
+          .map((item: any) => createTweetData(item.item.itemContent.tweet_results.result)),
+      };
+    });
+    
+    const tweetsDataUploaded = tweetsData.flatMap((tweet) => {
+      const mediaToUpload: string[] = [];
 
-    const hashText = await sha256.digest(text);
-    const cidText = CID.create(1, 85, hashText);
-    console.log(cidText.toString());
+      if (!!tweet.body.card) mediaToUpload.push(tweet.body.card.thumbnail_image_original);
+      mediaToUpload.push(tweet.user.profile_image_url_https);
 
-    const metadataBlob = new NFTBlob([text]);
-    const metadataCid = await client.storeBlob(metadataBlob);
+      tweet.body.media?.forEach((media) => {
+        mediaToUpload.push(media.src);
+        if (media.type === 'video') {
+          mediaToUpload.push(media.thumb);
+        }
+      });
+      return mediaToUpload;
+    });
 
-    // console.log(metadataCid);
-    //bafkreihp4n2z4bxyhwsa2kr2ontaporasoz5s7ckr7xpfczejcc7tkdmbu;
-    // console.log(cidText.toString() === metadataCid);
-    console.log(
-      cidText.toString() === 'bafkreihp4n2z4bxyhwsa2kr2ontaporasoz5s7ckr7xpfczejcc7tkdmbu',
-    );
+    const threadsDataToUpload = threadsData.flatMap((thread) => {
+      return thread.items.flatMap((tweet: ITweetData) => {
+        const mediaToUpload: string[] = [];
 
-    //// IMAGE
-    const image = await fs.readFile(
-      path.resolve(processPWD, 'data', 'test', '1640378758669520896.png'),
-    );
+        if (!!tweet.body.card) mediaToUpload.push(tweet.body.card.thumbnail_image_original);
 
-    const hashImage = await sha256.digest(image);
-    const cidImage = CID.create(1, 112, hashImage);
-    console.log(cidImage.toString());
+        mediaToUpload.push(tweet.user.profile_image_url_https);
 
-    const screenshotBlob = new NFTBlob([image]);
-    const screenshotCid = await client.storeBlob(screenshotBlob);
+        tweet.body.media?.forEach((media) => {
+          mediaToUpload.push(media.src);
+          if (media.type === 'video') {
+            mediaToUpload.push(media.thumb);
+          }
+        });
+        return mediaToUpload;
+      });
+    });
 
-    console.log(screenshotCid.toString());
-    // bafybeihbpiryqgmzmq3w2buelaeznjfn72bexbpmlz5frjjydnjdxfdkyy
-    console.log(cidText.toString() === screenshotCid);
-    console.log(
-      cidImage.toString() === 'bafybeihbpiryqgmzmq3w2buelaeznjfn72bexbpmlz5frjjydnjdxfdkyy',
-    );
-
+    const allUrlsToUpload = new Set([...threadsDataToUpload, ...tweetsDataUploaded]);
+    //// TODO: send somewhere to fetch and upload to IPFS.
     browser.close();
 
     response.set('Content-Type', 'application/json');
