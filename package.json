@@ -13,10 +13,9 @@
     "test:watch": "env TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\" }' mocha --timeout 40000 --watch --watch-files tests/**/*.ts,src/**/*.ts -r ts-node/register 'tests/**/*.ts'"
   },
   "dependencies": {
-    
     "axios": "^0.27.2",
+    "bull": "^4.10.4",
     "canvas": "^2.11.0",
-
     "crypto-js": "^4.1.1",
     "dotenv": "^16.0.3",
     "express": "^4.18.1",
@@ -25,7 +24,8 @@
     "morgan": "^1.10.0",
     "multiformats": "^9.9.0",
     "nft.storage": "^6.4.0",
-    "puppeteer": "^19.5.2"
+    "puppeteer": "^19.5.2",
+    "socket.io": "^4.6.1"
   },
   "devDependencies": {
     "@types/chai": "^4.3.4",
