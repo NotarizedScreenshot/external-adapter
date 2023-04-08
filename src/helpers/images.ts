@@ -53,4 +53,11 @@ export const makeStampedImage = async (srcImgPath: string, metaDataString: strin
   }
 };
 
+export const makeBufferFromBase64ImageUrl = (imgageUrl: string): Buffer => {
+  const clearUrl = imgageUrl.includes('data:image/png;base64,')
+    ? imgageUrl.replace('data:image/png;base64,', '')
+    : imgageUrl;
+  return Buffer.from(clearUrl, 'base64');
+};
+
 export const saveStampedImage = () => {};

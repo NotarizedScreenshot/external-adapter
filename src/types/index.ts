@@ -90,3 +90,8 @@ export interface ITweetTimelineEntry {
     };
   };
 }
+
+export interface IScreenShotBuffersToUpload {
+  screenshotImageBuffer: Buffer | null;
+  stampedImageBuffer: Buffer | null;
+}

@@ -13,10 +13,18 @@ import {
 import { puppeteerDefaultConfig } from '../config';
 import path from 'path';
 import { processPWD } from '../prestart';
-import { IGetScreenshotResponseData, ITweetData, ITweetTimelineEntry } from '../types';
+import {
+  IGetScreenshotResponseData,
+  IScreenShotBuffersToUpload,
+  ITweetData,
+  ITweetTimelineEntry,
+} from '../types';
 
 import { createTweetData } from '../models';
-import { makeStampedImage } from '../helpers/images';
+import { makeBufferFromBase64ImageUrl, makeStampedImage } from '../helpers/images';
+
+// import { imageQueue } from '../queue';
+import { uploadQueue } from '../queue';
 
 export const getScreenShot = async (request: Request, response: Response) => {
   try {
@@ -89,6 +97,7 @@ export const getScreenShot = async (request: Request, response: Response) => {
     );
 
     const screenshotImageUrl = fetchedData.imageUrl;
+    const screenshotImageBuffer = makeBufferFromBase64ImageUrl(screenshotImageUrl!);
     const stampedImageBuffer = await makeStampedImage(screenshotImageUrl!, fetchedData.metadata!);
     const stampedImageUrl = makeImageBase64UrlfromBuffer(stampedImageBuffer!);
     const responseData: IGetScreenshotResponseData = { ...fetchedData, imageUrl: stampedImageUrl };
@@ -114,8 +123,8 @@ export const getScreenShot = async (request: Request, response: Response) => {
           .map((item: any) => createTweetData(item.item.itemContent.tweet_results.result)),
       };
     });
-    
-    const tweetsDataUploaded = tweetsData.flatMap((tweet) => {
+
+    const tweetsDataUploaded = tweetsData.flatMap<string>((tweet) => {
       const mediaToUpload: string[] = [];
 
       if (!!tweet.body.card) mediaToUpload.push(tweet.body.card.thumbnail_image_original);
@@ -130,7 +139,7 @@ export const getScreenShot = async (request: Request, response: Response) => {
       return mediaToUpload;
     });
 
-    const threadsDataToUpload = threadsData.flatMap((thread) => {
+    const threadsDataToUpload = threadsData.flatMap<string>((thread) => {
       return thread.items.flatMap((tweet: ITweetData) => {
         const mediaToUpload: string[] = [];
 
@@ -148,9 +157,16 @@ export const getScreenShot = async (request: Request, response: Response) => {
       });
     });
 
-    const allUrlsToUpload = new Set([...threadsDataToUpload, ...tweetsDataUploaded]);
-    const screenShotsToUpload = { screenshotImageUrl, stampedImageUrl };
+    const mediaUrlsToUpload = Array.from(new Set([...threadsDataToUpload, ...tweetsDataUploaded]));
+    const screenShotBuffersToUpload: IScreenShotBuffersToUpload = {
+      screenshotImageBuffer,
+      stampedImageBuffer,
+    };
     const metadataToUpload = { metadata: responseData.metadata, tweetData: responseData.tweetdata };
+
+    uploadQueue.add({ data: 'job data' });
+
+    // console.log(job);
     //// TODO: send somewhere to fetch and upload to IPFS.
     browser.close();
 
