@@ -121,6 +121,10 @@ export const tweetDataPathFromTweetId = (tweetId: string): string => {
   return `${tweetId}-tweet.json`;
 };
 
+export const metadataCidPathFromTweetId = (tweetId: string): string => {
+  return `${tweetId}.json`;
+};
+
 export const isValidUint64 = (data: string | number) => {
   const stringified = String(data);
   if (!stringified || stringified.length === 0) return false;

@@ -33,6 +33,7 @@ export interface ITweetCard {
   description: string;
   domain: string;
   thumbnail_image_original: string;
+  player_image_original: string;
   vanity_url: string;
   title: string;
   card_url: string;

@@ -23,7 +23,6 @@ import {
 import { createTweetData } from '../models';
 import { makeBufferFromBase64ImageUrl, makeStampedImage } from '../helpers/images';
 
-// import { imageQueue } from '../queue';
 import { uploadQueue } from '../queue';
 
 export const getScreenShot = async (request: Request, response: Response) => {
@@ -125,10 +124,14 @@ export const getScreenShot = async (request: Request, response: Response) => {
     });
 
     const tweetsDataUploaded = tweetsData.flatMap<string>((tweet) => {
-      const mediaToUpload: string[] = [];
+      const mediaToUpload: string[] = [];      
 
-      if (!!tweet.body.card) mediaToUpload.push(tweet.body.card.thumbnail_image_original);
-      mediaToUpload.push(tweet.user.profile_image_url_https);
+      if (!!tweet.body.card?.thumbnail_image_original)
+        mediaToUpload.push(tweet.body.card.thumbnail_image_original);
+      if (!!tweet.body.card?.player_image_original)
+        mediaToUpload.push(tweet.body.card.player_image_original);
+      if (!!tweet.user.profile_image_url_https)
+        mediaToUpload.push(tweet.user.profile_image_url_https);
 
       tweet.body.media?.forEach((media) => {
         mediaToUpload.push(media.src);
@@ -164,10 +167,13 @@ export const getScreenShot = async (request: Request, response: Response) => {
     };
     const metadataToUpload = { metadata: responseData.metadata, tweetData: responseData.tweetdata };
 
-    uploadQueue.add({ data: 'job data' });
+    uploadQueue.add({
+      tweetId,
+      mediaUrlsToUpload,
+      screenShotBuffersToUpload,
+      metadataToUpload,
+    });
 
-    // console.log(job);
-    //// TODO: send somewhere to fetch and upload to IPFS.
     browser.close();
 
     response.set('Content-Type', 'application/json');
