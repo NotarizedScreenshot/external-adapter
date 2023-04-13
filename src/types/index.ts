@@ -96,3 +96,26 @@ export interface IScreenShotBuffersToUpload {
   screenshotImageBuffer: Buffer | null;
   stampedImageBuffer: Buffer | null;
 }
+
+export interface IContentItem {
+  item: {
+    item: {
+      itemContent: {
+        itemType: string;
+        tweet_results: {
+          result: ITweetData;
+        };
+      };
+    };
+  };
+}
+
+export interface IThreadEntry {
+  entryId: string;
+  content: { items: IContentItem[] };
+}
+
+export interface IThreadData {
+  entryId: string;
+  items: ITweetData[];
+}

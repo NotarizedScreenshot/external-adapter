@@ -1,28 +1,33 @@
 import { Request, Response } from 'express';
-import { metadataPathFromUrl, metadataToAttirbutes, pngPathFromUrl, trimUrl } from '../helpers';
+import {
+  metadataCidPathFromTweetId,
+  metadataToAttirbutes,
+  pngPathFromUrl,
+  trimUrl,
+} from '../helpers';
 import path from 'path';
 import { processPWD } from '../prestart';
 import fs from 'fs/promises';
-import { NFTStorage, Blob as NFTBlob } from 'nft.storage';
 import enchex from 'crypto-js/enc-hex';
 import sha256 from 'crypto-js/sha256';
 import CryptoJS from 'crypto-js';
+import axios from 'axios';
+import { updloadTweetToCAS } from '../helpers/nftStorage';
 
 export const adapterResponse = async (request: Request, response: Response) => {
   try {
     const requestUrl = request.body.data.url;
-    const metadataPath = path.resolve(
-      processPWD,
-      'data',
-      metadataPathFromUrl(trimUrl(requestUrl), ''),
-    );
-    const screenshotPath = path.resolve(
-      processPWD,
-      'data',
-      pngPathFromUrl(trimUrl(requestUrl), ''),
-    );
+    const tweetId = request.body.data.url as string;
+    const metadataCidPath = path.resolve(processPWD, 'data', metadataCidPathFromTweetId(tweetId));
+    const metadataCid = JSON.parse(await fs.readFile(metadataCidPath, 'utf-8'))[tweetId];
+    console.log('metadataCid', metadataCid);
 
-    const metadata = JSON.parse(await fs.readFile(metadataPath, 'utf-8'));
+    const trimmedUrl = trimUrl(requestUrl);
+
+    const metadataResponse = await axios.get(`https://ipfs.io/ipfs/${metadataCid}`);
+    const metadata = metadataResponse.data;    
+    const screenshotPath = path.resolve(processPWD, 'data', pngPathFromUrl(trimmedUrl));
+
     const screenshotBuffer = await fs.readFile(screenshotPath);
 
     const trustedSha256sum = enchex.stringify(
@@ -30,10 +35,7 @@ export const adapterResponse = async (request: Request, response: Response) => {
       sha256(CryptoJS.lib.WordArray.create(screenshotBuffer)),
     );
 
-    const screenshotBlob = new NFTBlob([screenshotBuffer]);
-
-    const client = new NFTStorage({ token: process.env.NFT_STORAGE_TOKEN! });
-    const screenshotCid = await client.storeBlob(screenshotBlob);
+    const screenshotCid = await updloadTweetToCAS(screenshotBuffer);
 
     const name = 'Notarized Screenshot 0x' + trustedSha256sum;
     const image = 'ipfs://' + screenshotCid;
@@ -48,7 +50,7 @@ export const adapterResponse = async (request: Request, response: Response) => {
       '\n' +
       ' Check metadata fields for more details.';
 
-    const metadataBlob = new NFTBlob([
+    const nftMmetadataCid = await updloadTweetToCAS(
       JSON.stringify({
         name,
         image,
@@ -56,17 +58,16 @@ export const adapterResponse = async (request: Request, response: Response) => {
         ts,
         time,
         url: requestUrl,
-        attributes: metadataToAttirbutes(metadata),
+        attributes: metadataToAttirbutes(JSON.parse(metadata.metadata)),
       }),
-    ]);
+    );
 
-    const metadataCid = await client.storeBlob(metadataBlob);
     const data = {
       data: {
         url: requestUrl,
         sha256sum: trustedSha256sum,
         cid: screenshotCid,
-        metadataCid: metadataCid,
+        metadataCid: nftMmetadataCid,
       },
     };
     response.status(200).json(data);

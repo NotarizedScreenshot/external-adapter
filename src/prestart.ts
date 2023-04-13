@@ -1,21 +1,18 @@
-import { Application } from "express";
+import { Application } from 'express';
 import path from 'path';
-import fs from 'fs/promises';
-import fss from "fs";
+import fs from 'fs';
 
-export const processPWD : string = process.env.PWD ? process.env.PWD : process.cwd()
+export const processPWD: string = process.env.PWD ? process.env.PWD : process.cwd();
 
-export const preStartJobs = async (sv: Application) => {
+export const preStartJobs = (sv: Application) => {
   //create tmp dirs
   if (process.env.PWD) process.env.PWD = process.cwd();
 
-  if (!fss.existsSync(path.resolve(processPWD, 'data'))) {
-    await fs.mkdir(path.resolve(processPWD, 'data'));
+  if (!fs.existsSync(path.resolve(processPWD, 'data'))) {
+    fs.mkdirSync(path.resolve(processPWD, 'data'));
   }
 
   //image processing
 
-  
   //connect to storages here ...
 };
-

@@ -15,7 +15,7 @@ const META_STAMP_COLOR = 'red';
 const META_STAMP_CANVAS_DEFAULT_WIDTH = 900;
 const META_STAMP_CANVAS_DEFAULT_HEIGHT = 1000;
 
-export const makeStampedImage = async (srcImgPath: string, metaDataString: string) => {
+export const makeStampedImage = async (srcImgPath: string | Buffer, metaDataString: string) => {
   try {
     const canvas = createCanvas(META_STAMP_CANVAS_DEFAULT_WIDTH, META_STAMP_CANVAS_DEFAULT_HEIGHT);
     const ctx = canvas.getContext('2d');
@@ -47,8 +47,8 @@ export const makeStampedImage = async (srcImgPath: string, metaDataString: strin
     const canvasBuffer = canvas.toBuffer('image/png');
 
     return canvasBuffer;
-  } catch (e) {
-    console.log('create img problem: ', e);
+  } catch (error: any) {
+    console.log('makeStampedImage error: ', error.message);
     return null;
   }
 };

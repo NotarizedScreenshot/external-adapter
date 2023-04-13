@@ -1,8 +1,17 @@
 import { spawn } from 'child_process';
-import { IMetadata, ITweetTimelineEntry, TMetadataAttributes } from '../types';
+import {
+  IMetadata,
+  IThreadData,
+  IThreadEntry,
+  ITweetData,
+  ITweetTimelineEntry,
+  TMetadataAttributes,
+} from '../types';
 import enchex from 'crypto-js/enc-hex';
 import sha256 from 'crypto-js/sha256';
 import CryptoJS from 'crypto-js';
+import { Response } from 'express';
+import { createTweetData } from '../models';
 
 export const getIncludeSubstringElementIndex = (
   array: string[],
@@ -97,7 +106,7 @@ export const getStampMetaString = (metadata: IMetadata) => {
   return data.join('\n');
 };
 
-export const pngPathFromUrl = (url: string, signCode: string): string => {
+export const pngPathFromUrl = (url: string): string => {
   return `${url.split(':').join('_').split('/').join('_').split('.').join('_')}.png`;
 };
 
@@ -105,11 +114,11 @@ export const pngPathFromTweetId = (tweetId: string): string => {
   return `${tweetId}.png`;
 };
 
-export const pngPathStampedFromUrl = (url: string, signCode: string): string => {
+export const pngPathStampedFromUrl = (url: string): string => {
   return `${url.split(':').join('_').split('/').join('_').split('.').join('_')}_stamp.png`;
 };
 
-export const metadataPathFromUrl = (url: string, signCode: string): string => {
+export const metadataPathFromUrl = (url: string): string => {
   return `${url.split(':').join('_').split('/').join('_').split('.').join('_')}.json`;
 };
 
@@ -158,20 +167,18 @@ export const getTweetResultsFromTweetRawData = (tweetRawDataString: string, twee
       (el: any) => el.type === 'TimelineAddEntries',
     ).entries;
 
-    const itemContents = tweetTimeLineEntries.reduce((acc: any, val: any) => {
-      return val.entryId === `tweet-${tweetId}` ? val : acc;
-    }, null).content.itemContent;
+    const tweetEntry = tweetTimeLineEntries.find(
+      (entry: any) => entry.entryId === `tweet-${tweetId}`,
+    );
 
-    return itemContents.tweet_results.result;
+    return tweetEntry.content.itemContent.tweet_results.result;
   } catch (error) {
     console.error(error);
     return null;
   }
 };
 
-export const getTweetTimelineEntries = (
-  tweetRawDataString: string,
-): ITweetTimelineEntry[] | null => {
+export const getTweetTimelineEntries = (tweetRawDataString: string): ITweetTimelineEntry[] => {
   try {
     const tweetRawDataParsed = JSON.parse(tweetRawDataString);
     const tweetResponseInstructions =
@@ -183,6 +190,58 @@ export const getTweetTimelineEntries = (
     return tweetTimeLineEntries;
   } catch (error) {
     console.error(error);
-    return null;
+    return [];
   }
+};
+
+export const reportError = (message: string, response: Response) => {
+  console.error(message);
+  return response.status(422).json({ error: 'invalid tweet id' });
+};
+
+export const getTweetDataFromThreadEntry = (entry: IThreadEntry) => {
+  return {
+    entryId: entry.entryId,
+    items: entry.content.items
+      .filter((item: any) => item.item.itemContent.itemType === 'TimelineTweet')
+      .map((item: any) => createTweetData(item.item.itemContent.tweet_results.result)),
+  };
+};
+
+export const getThreadsDataToUpload = (threadsData: IThreadData[]): string[] => {
+  return threadsData.flatMap<string>((thread) => {
+    return thread.items.flatMap((tweet: ITweetData) => {
+      const mediaToUpload: string[] = [];
+
+      if (!!tweet.body.card) mediaToUpload.push(tweet.body.card.thumbnail_image_original);
+
+      mediaToUpload.push(tweet.user.profile_image_url_https);
+
+      tweet.body.media?.forEach((media) => {
+        mediaToUpload.push(media.src);
+        if (media.type === 'video') {
+          mediaToUpload.push(media.thumb);
+        }
+      });
+      return mediaToUpload;
+    });
+  });
+};
+
+export const getMediaUrlsToUpload = (tweet: ITweetData): string[] => {
+  const mediaToUpload: string[] = [];
+
+  if (!!tweet.body.card?.thumbnail_image_original)
+    mediaToUpload.push(tweet.body.card.thumbnail_image_original);
+  if (!!tweet.body.card?.player_image_original)
+    mediaToUpload.push(tweet.body.card.player_image_original);
+  if (!!tweet.user.profile_image_url_https) mediaToUpload.push(tweet.user.profile_image_url_https);
+
+  tweet.body.media?.forEach((media) => {
+    mediaToUpload.push(media.src);
+    if (media.type === 'video') {
+      mediaToUpload.push(media.thumb);
+    }
+  });
+  return mediaToUpload;
 };
