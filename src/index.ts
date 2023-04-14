@@ -9,4 +9,8 @@ if (!process.env.DEFAULT_HTTP_PORT) {
 }
 export const server = startExpressInstance(process.env.DEFAULT_HTTP_PORT);
 
-export const socketServer = new SocketServer(server);
+export const io = new SocketServer(server);
+
+io.on('connection', (socket) => {  
+  socket.emit('connected', socket.id);
+});

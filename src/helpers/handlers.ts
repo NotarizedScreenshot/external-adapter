@@ -27,8 +27,7 @@ import { puppeteerDefaultConfig } from '../config';
 import puppeteer from 'puppeteer';
 import { makeBufferFromBase64ImageUrl, makeStampedImage } from './images';
 import { createTweetData } from '../models';
-import { createQueue } from '../queue';
-import { socketServer } from '../index';
+import { uploadQueue } from '../queue';
 
 export const getMetaDataPromise = (page: Page, tweetUrl: string) =>
   new Promise<string>((resolve, reject) => {
@@ -91,8 +90,9 @@ export const screenshotWithPuppeteer = async (
   response: Response,
 ): Promise<Response> => {
   try {
-    const { tweetId } = request.query as {
+    const { tweetId, userId } = request.query as {
       tweetId: string;
+      userId: string;
     };
 
     if (!isValidUint64(tweetId)) {
@@ -171,37 +171,15 @@ export const screenshotWithPuppeteer = async (
     };
     const metadataToUpload = { metadata: responseData.metadata, tweetData: responseData.tweetdata };
 
-    const uploadQueue = createQueue(request.id ? request.id : 'upload_screen_shot');
-
-    const uploadJob = await uploadQueue.add({
+    const uploadJob = await uploadQueue.add('upload', {
       tweetId,
       mediaUrlsToUpload,
       screenShotBuffersToUpload,
       metadataToUpload,
-      requestId: request.id,
+      userId,
     });
 
     browser.close();
-
-    uploadQueue.on('completed', async (job) => {
-      console.log('completed');
-      const data = await job.finished();
-      socketServer.emit('uploadComplete', JSON.stringify({ ...data, jobId: job.id }));
-
-      uploadQueue.close();
-    });
-
-    uploadQueue.on('progress', (job, progress) => {
-      socketServer.emit('uploadProgress', progress);
-    });
-
-    uploadQueue.on('error', (error) => {
-      console.log('upload error', error);
-    });
-
-    uploadQueue.on('failed', (job, error) => {
-      console.log('failed', error);
-    });
 
     response.set('Content-Type', 'application/json');
     return response.status(200).send({ ...responseData, jobId: uploadJob.id });
