@@ -119,3 +119,13 @@ export interface IThreadData {
   entryId: string;
   items: ITweetData[];
 }
+
+export interface IUploadJobData {
+  tweetId: string;
+  userId: string;
+  metadata: string | null;
+  tweetdata: string | null;
+  screenshotImageBuffer: Buffer | null;
+  stampedImageBuffer: Buffer | null;
+  mediaUrls: string[];
+}

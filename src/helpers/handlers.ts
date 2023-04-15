@@ -94,6 +94,21 @@ export const screenshotWithPuppeteer = async (
       tweetId: string;
       userId: string;
     };
+    const jobs = await uploadQueue.getJobs(['active'])    
+
+    const activeJob = jobs.find((job) => job.data.userId === userId);
+    if (!!activeJob) {
+      const data = activeJob.data;
+      const { stampedImageBuffer, metadata, tweetdata } = data;
+
+      const responseData: IGetScreenshotResponseData = {
+        imageUrl: makeImageBase64UrlfromBuffer(Buffer.from(stampedImageBuffer!)),
+        metadata,
+        tweetdata,
+      };
+      response.set('Content-Type', 'application/json');
+      return response.status(200).send({ ...responseData, jobId: activeJob.id });
+    }
 
     if (!isValidUint64(tweetId)) {
       return reportError('invalid tweeetId', response);
@@ -164,19 +179,16 @@ export const screenshotWithPuppeteer = async (
 
     const tweetsDataUrlsToUpload = tweetsData.flatMap<string>(getMediaUrlsToUpload);
 
-    const mediaUrlsToUpload = Array.from(new Set([...tweetsDataUrlsToUpload]));
-    const screenShotBuffersToUpload: IScreenShotBuffersToUpload = {
+    const mediaUrls = Array.from(new Set([...tweetsDataUrlsToUpload]));
+
+    const uploadJob = await uploadQueue.add({
+      tweetId,
+      userId,
+      metadata: fetchedData.metadata,
+      tweetdata: fetchedData.tweetdata,
       screenshotImageBuffer,
       stampedImageBuffer,
-    };
-    const metadataToUpload = { metadata: responseData.metadata, tweetData: responseData.tweetdata };
-
-    const uploadJob = await uploadQueue.add('upload', {
-      tweetId,
-      mediaUrlsToUpload,
-      screenShotBuffersToUpload,
-      metadataToUpload,
-      userId,
+      mediaUrls,
     });
 
     browser.close();

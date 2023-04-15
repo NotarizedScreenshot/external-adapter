@@ -12,6 +12,8 @@ import sha256 from 'crypto-js/sha256';
 import CryptoJS from 'crypto-js';
 import { Response } from 'express';
 import { createTweetData } from '../models';
+import { io } from '../index';
+import { Socket } from 'socket.io';
 
 export const getIncludeSubstringElementIndex = (
   array: string[],
@@ -244,4 +246,14 @@ export const getMediaUrlsToUpload = (tweet: ITweetData): string[] => {
     }
   });
   return mediaToUpload;
+};
+
+export const getSocketByUserId = (userId: string): Socket | null => {
+  try {
+    const socket = [...io.sockets.sockets.values()].find((value) => value.userId === userId);
+    return socket ? socket : null;
+  } catch (error: any) {
+    console.error(`Getting socket by userId error: ${error.message}`);
+    return null;
+  }
 };

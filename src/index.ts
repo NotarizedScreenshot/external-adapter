@@ -11,6 +11,16 @@ export const server = startExpressInstance(process.env.DEFAULT_HTTP_PORT);
 
 export const io = new SocketServer(server);
 
-io.on('connection', (socket) => {  
+export const getSocketServer = () => io;
+
+io.on('connection', (socket) => {
+  socket.on('disconnect', () => {
+    console.log(`socket disconnected, socket id: ${socket.id}`);
+  });
   socket.emit('connected', socket.id);
+
+  socket.on('userIdSaved', (userId) => {
+    console.log(`saved userId: ${userId} for socket id: ${socket.id}`);    
+    socket.userId = userId;
+  });
 });

@@ -3,37 +3,33 @@ import path from 'path';
 import axios from 'axios';
 import Queue from 'bull';
 import { processPWD } from '../prestart';
-import { metadataCidPathFromTweetId } from '../helpers';
+import { getSocketByUserId, metadataCidPathFromTweetId } from '../helpers';
 import { updloadTweetToCAS } from '../helpers/nftStorage';
-import { io } from '../index';
+import { IUploadJobData } from '../types';
 
-export const uploadQueue = new Queue('upload_screen_shot');
+export const uploadQueue = new Queue<IUploadJobData>('upload_screen_shot');
 
-uploadQueue.process('upload', async (job) => {
+uploadQueue.process(async (job) => {
   console.log(`uploadQueue job id:${job.id} name: ${job.name} started `);
   job.progress(1);
   const {
     tweetId,
-    mediaUrlsToUpload,
-    screenShotBuffersToUpload: { screenshotImageBuffer, stampedImageBuffer },
-    metadataToUpload: { metadata, tweetData },
+    tweetdata,
+    metadata,
+    screenshotImageBuffer,
+    stampedImageBuffer,
+    mediaUrls,
     userId,
-  } = job.data as {
-    tweetId: string;
-    metadataToUpload: { metadata: string; tweetData: string };
-    screenShotBuffersToUpload: { screenshotImageBuffer: Buffer; stampedImageBuffer: Buffer };
-    mediaUrlsToUpload: string[];
-    userId: string;
-  };
+  } = job.data;
 
-  const screenshotCid = await updloadTweetToCAS(Buffer.from(screenshotImageBuffer));
+  const screenshotCid = await updloadTweetToCAS(Buffer.from(screenshotImageBuffer!));
   job.progress(10);
 
-  const stampedScreenShotCid = await updloadTweetToCAS(Buffer.from(stampedImageBuffer));
+  const stampedScreenShotCid = await updloadTweetToCAS(Buffer.from(stampedImageBuffer!));
   job.progress(20);
 
   const mediaCidMap = await Promise.all<{ url: string; cid: string | null; error?: string }>(
-    mediaUrlsToUpload.map(async (url: string, index: number, array: any[]) => {
+    mediaUrls.map(async (url: string, index: number, array: any[]) => {
       try {
         const response = await axios.get(url, {
           responseType: 'arraybuffer',
@@ -52,7 +48,7 @@ uploadQueue.process('upload', async (job) => {
   job.progress(70);
 
   const metadataToSave = {
-    tweetData,
+    tweetdata,
     metadata,
     mediaCidMap,
     screenshotCid,
@@ -80,13 +76,15 @@ uploadQueue.process('upload', async (job) => {
 uploadQueue.on('completed', async (job) => {
   console.log(`uploadQueue job id:${job.id} name: ${job.name} completed `);
   const data = await job.finished();
-  io.to(data.userId).emit('uploadComplete', JSON.stringify(data));
+  const socket = getSocketByUserId(data.userId);
+  if (!!socket) socket.emit('uploadComplete', JSON.stringify(data));
   job.remove();
 });
 
 uploadQueue.on('progress', (job, progress) => {
   console.log(`uploadQueue job id:${job.id} name: ${job.name} progress ${progress} `);
-  io.to(job.data.userId).emit('uploadProgress', progress);
+  const socket = getSocketByUserId(job.data.userId);
+  if (!!socket) socket.emit('uploadProgress', progress);
 });
 
 uploadQueue.on('error', (error) => {
@@ -94,5 +92,5 @@ uploadQueue.on('error', (error) => {
 });
 
 uploadQueue.on('failed', (job, error) => {
-  console.log('failed', error);
+  console.log(`Job id: ${job.id} failed with error:`, error);
 });
