@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import {
+  getTrustedHashSum,
   metadataCidPathFromTweetId,
   metadataToAttirbutes,
   pngPathFromUrl,
@@ -13,6 +14,17 @@ import sha256 from 'crypto-js/sha256';
 import CryptoJS from 'crypto-js';
 import axios from 'axios';
 import { updloadTweetToCAS } from '../helpers/nftStorage';
+import { IPFS_GATEWAY_BASE_URL } from '../config';
+
+/**
+ * Recieves http request from chainlink node
+ * Http request contians of tweetId (still name url)
+ * reads locally saved data file and gets cid of metadata saved in the ipfs
+ * fetches metadata frim IPFS
+ * reads locally saved screenshot file, makes trusted hashsum of it
+ * composes metadat for NFT, than saves it to ipfse
+ * sends back to Chainlink node a response with reqeusted tweetId, hashsum and screenshot and metadata cids.
+ */
 
 export const adapterResponse = async (request: Request, response: Response) => {
   try {
@@ -20,20 +32,16 @@ export const adapterResponse = async (request: Request, response: Response) => {
     const tweetId = request.body.data.url as string;
     const metadataCidPath = path.resolve(processPWD, 'data', metadataCidPathFromTweetId(tweetId));
     const metadataCid = JSON.parse(await fs.readFile(metadataCidPath, 'utf-8'))[tweetId];
-    console.log('metadataCid', metadataCid);
 
     const trimmedUrl = trimUrl(requestUrl);
 
-    const metadataResponse = await axios.get(`https://ipfs.io/ipfs/${metadataCid}`);
-    const metadata = metadataResponse.data;    
+    const metadataResponse = await axios.get(`${IPFS_GATEWAY_BASE_URL}${metadataCid}`);
+    const metadata = metadataResponse.data;
     const screenshotPath = path.resolve(processPWD, 'data', pngPathFromUrl(trimmedUrl));
 
     const screenshotBuffer = await fs.readFile(screenshotPath);
 
-    const trustedSha256sum = enchex.stringify(
-      // @ts-ignore
-      sha256(CryptoJS.lib.WordArray.create(screenshotBuffer)),
-    );
+    const trustedSha256sum = getTrustedHashSum(screenshotBuffer);
 
     const screenshotCid = await updloadTweetToCAS(screenshotBuffer);
 
@@ -41,6 +49,8 @@ export const adapterResponse = async (request: Request, response: Response) => {
     const image = 'ipfs://' + screenshotCid;
     const ts = Date.now();
     const time = new Date(ts).toUTCString();
+
+    //TODO: to be revised as a template string
     const description =
       name +
       ' by QuantumOracle, result of verifying the image served at URL \n' +
@@ -50,7 +60,7 @@ export const adapterResponse = async (request: Request, response: Response) => {
       '\n' +
       ' Check metadata fields for more details.';
 
-    const nftMmetadataCid = await updloadTweetToCAS(
+    const nftMetadataCid = await updloadTweetToCAS(
       JSON.stringify({
         name,
         image,
@@ -67,19 +77,15 @@ export const adapterResponse = async (request: Request, response: Response) => {
         url: requestUrl,
         sha256sum: trustedSha256sum,
         cid: screenshotCid,
-        metadataCid: nftMmetadataCid,
+        metadataCid: nftMetadataCid,
       },
     };
     response.status(200).json(data);
-  } catch (error) {
-    console.log(error);
-    if (error instanceof Error) {
-      if (error.message.includes('ENOENT')) {
-        response.status(422).json({ error: error.message });
-        return;
-      }
-      return response.status(502).json({ error: error.message });
+  } catch (error: any) {
+    if (error.message.includes('ENOENT')) {
+      response.status(422).json({ error: error.message });
+      return;
     }
-    response.status(502).json({ error: `Unknown error ${error}` });
+    return response.status(502).json({ error: error.message });
   }
 };
