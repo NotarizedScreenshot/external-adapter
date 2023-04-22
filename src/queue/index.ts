@@ -4,8 +4,9 @@ import axios from 'axios';
 import Queue from 'bull';
 import { processPWD } from '../prestart';
 import { getSocketByUserId, metadataCidPathFromTweetId } from '../helpers';
-import { updloadTweetToCAS } from '../helpers/nftStorage';
+import { uploadToCAS } from '../helpers/nftStorage';
 import { IUploadJobData } from '../types';
+import { NFTStorage } from 'nft.storage';
 
 export const uploadQueue = new Queue<IUploadJobData>('upload_screen_shot');
 
@@ -22,10 +23,14 @@ uploadQueue.process(async (job) => {
     userId,
   } = job.data;
 
-  const screenshotCid = await updloadTweetToCAS(Buffer.from(screenshotImageBuffer!));
+  console.log(job.data);
+
+  const client = new NFTStorage({ token: process.env.NFT_STORAGE_TOKEN! });
+
+  const screenshotCid = await uploadToCAS(Buffer.from(screenshotImageBuffer!), client);
   job.progress(10);
 
-  const stampedScreenShotCid = await updloadTweetToCAS(Buffer.from(stampedImageBuffer!));
+  const stampedScreenShotCid = await uploadToCAS(Buffer.from(stampedImageBuffer!), client);
   job.progress(20);
 
   const mediaCidMap = await Promise.all<{ url: string; cid: string | null; error?: string }>(
@@ -36,7 +41,7 @@ uploadQueue.process(async (job) => {
         });
         const buffer = response.data;
 
-        const cid = (await updloadTweetToCAS(buffer)) as string;
+        const cid = (await uploadToCAS(buffer, client)) as string;
 
         return { url, cid };
       } catch (error: any) {
@@ -55,7 +60,7 @@ uploadQueue.process(async (job) => {
     stampedScreenShotCid,
   };
 
-  const metadataToSaveCid = await updloadTweetToCAS(JSON.stringify(metadataToSave));
+  const metadataToSaveCid = await uploadToCAS(JSON.stringify(metadataToSave), client);
   job.progress(90);
 
   await fs.writeFile(

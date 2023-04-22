@@ -4,16 +4,13 @@ import { getStampMetaString } from '../helpers';
 
 import { IMetadata } from 'types';
 import { processPWD } from '../prestart';
-
-const VIEWPORT_DEFAULT_WIDTH = 1000;
-const VIEWPORT_DEFAULT_HEIGHT = 1000;
-const WATERMARK_DEFAULT_WIDTH = 818;
-const WATERMARK_DEFAULT_HEIGHT = 1000;
-const WATERMARK_IMAGE_PATH = path.resolve(processPWD, 'public/images/stamp_t.png');
-const META_STAMP_FONT = '10px monospace';
-const META_STAMP_COLOR = 'red';
-const META_STAMP_CANVAS_DEFAULT_WIDTH = 900;
-const META_STAMP_CANVAS_DEFAULT_HEIGHT = 1000;
+import {
+  META_STAMP_CANVAS_DEFAULT_HEIGHT,
+  META_STAMP_CANVAS_DEFAULT_WIDTH,
+  META_STAMP_COLOR,
+  META_STAMP_FONT,
+  WATERMARK_IMAGE_PATH,
+} from '../config';
 
 export const makeStampedImage = async (srcImgPath: string | Buffer, metaDataString: string) => {
   try {
@@ -25,7 +22,9 @@ export const makeStampedImage = async (srcImgPath: string | Buffer, metaDataStri
     const ctxFillTextY = 20;
 
     const screenshotImage = await loadImage(srcImgPath);
-    const watermarkImage = await loadImage(WATERMARK_IMAGE_PATH);
+    const watermarkImage = await loadImage(
+      path.resolve(processPWD, 'public', WATERMARK_IMAGE_PATH),
+    );
     const metadata = JSON.parse(metaDataString) as IMetadata;
 
     ctx.drawImage(

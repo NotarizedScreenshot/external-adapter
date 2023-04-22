@@ -46,7 +46,7 @@ export const isValidUrl = (url: string, protocols: string[] = ['http:', 'https:'
   }
 };
 
-export const getDnsInfo = (url: string, args: string[] = []): Promise<string> => {
+export const getDnsInfo = (url: string, args: string[] = ['+trace', 'any']): Promise<string[]> => {
   const cmd = `dig`;
 
   return new Promise((resolve, reject) => {
@@ -62,7 +62,7 @@ export const getDnsInfo = (url: string, args: string[] = []): Promise<string> =>
     process.stdout.on('end', () => {
       console.log('dig process end');
       if (output.includes('connection timed out')) reject('dig timed out');
-      resolve(output.trim());
+      resolve(output.trim().split('\n'));
     });
 
     /*
@@ -108,8 +108,10 @@ export const getStampMetaString = (metadata: IMetadata) => {
   return data.join('\n');
 };
 
+export const urlToLodashedString = (url: string) => url.split(/[,.:\/]+/).join('_');
+
 export const pngPathFromUrl = (url: string): string => {
-  return `${url.split(':').join('_').split('/').join('_').split('.').join('_')}.png`;
+  return `${urlToLodashedString(url)}.png`;
 };
 
 export const pngPathFromTweetId = (tweetId: string): string => {
@@ -117,11 +119,11 @@ export const pngPathFromTweetId = (tweetId: string): string => {
 };
 
 export const pngPathStampedFromUrl = (url: string): string => {
-  return `${url.split(':').join('_').split('/').join('_').split('.').join('_')}_stamp.png`;
+  return `${urlToLodashedString(url)}_stamp.png`;
 };
 
 export const metadataPathFromUrl = (url: string): string => {
-  return `${url.split(':').join('_').split('/').join('_').split('.').join('_')}.json`;
+  return `${urlToLodashedString(url)}.json`;
 };
 
 export const metadataPathFromTweetId = (tweetId: string): string => {
@@ -210,6 +212,15 @@ export const getTweetDataFromThreadEntry = (entry: IThreadEntry) => {
   };
 };
 
+export const getTweetBodyMediaUrls = (tweetdata: ITweetData): string[] => {
+  return tweetdata.body.media
+    ? tweetdata.body.media?.flatMap((media) => {
+        if (media.type === 'video') return [media.src, media.thumb];
+        return media.src;
+      })
+    : [];
+};
+
 export const getThreadsDataToUpload = (threadsData: IThreadData[]): string[] => {
   return threadsData.flatMap<string>((thread) => {
     return thread.items.flatMap((tweet: ITweetData) => {
@@ -219,13 +230,9 @@ export const getThreadsDataToUpload = (threadsData: IThreadData[]): string[] => 
 
       mediaToUpload.push(tweet.user.profile_image_url_https);
 
-      tweet.body.media?.forEach((media) => {
-        mediaToUpload.push(media.src);
-        if (media.type === 'video') {
-          mediaToUpload.push(media.thumb);
-        }
-      });
-      return mediaToUpload;
+      const mediaUrls = getTweetBodyMediaUrls(tweet);
+
+      return [...mediaToUpload, ...mediaUrls];
     });
   });
 };
@@ -239,13 +246,9 @@ export const getMediaUrlsToUpload = (tweet: ITweetData): string[] => {
     mediaToUpload.push(tweet.body.card.player_image_original);
   if (!!tweet.user.profile_image_url_https) mediaToUpload.push(tweet.user.profile_image_url_https);
 
-  tweet.body.media?.forEach((media) => {
-    mediaToUpload.push(media.src);
-    if (media.type === 'video') {
-      mediaToUpload.push(media.thumb);
-    }
-  });
-  return mediaToUpload;
+  const mediaUrls = getTweetBodyMediaUrls(tweet);
+
+  return [...mediaToUpload, ...mediaUrls];
 };
 
 export const getSocketByUserId = (userId: string): Socket | null => {

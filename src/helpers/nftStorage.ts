@@ -1,7 +1,9 @@
 import { NFTStorage, Blob as NFTBlob } from 'nft.storage';
 
-export const updloadTweetToCAS = async (dataBuffer: Buffer | string): Promise<string> => {
-  const client = new NFTStorage({ token: process.env.NFT_STORAGE_TOKEN! });
+export const uploadToCAS = async (
+  dataBuffer: Buffer | string,
+  client: NFTStorage,
+): Promise<string> => {
   const blob = new NFTBlob([dataBuffer]);
   const cid = await client.storeBlob(blob);
   return cid;

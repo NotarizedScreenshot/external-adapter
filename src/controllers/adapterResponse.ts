@@ -9,12 +9,10 @@ import {
 import path from 'path';
 import { processPWD } from '../prestart';
 import fs from 'fs/promises';
-import enchex from 'crypto-js/enc-hex';
-import sha256 from 'crypto-js/sha256';
-import CryptoJS from 'crypto-js';
 import axios from 'axios';
-import { updloadTweetToCAS } from '../helpers/nftStorage';
+import { uploadToCAS } from '../helpers/nftStorage';
 import { IPFS_GATEWAY_BASE_URL } from '../config';
+import { NFTStorage } from 'nft.storage';
 
 /**
  * Recieves http request from chainlink node
@@ -43,7 +41,8 @@ export const adapterResponse = async (request: Request, response: Response) => {
 
     const trustedSha256sum = getTrustedHashSum(screenshotBuffer);
 
-    const screenshotCid = await updloadTweetToCAS(screenshotBuffer);
+    const client = new NFTStorage({ token: process.env.NFT_STORAGE_TOKEN! });
+    const screenshotCid = await uploadToCAS(screenshotBuffer, client);
 
     const name = 'Notarized Screenshot 0x' + trustedSha256sum;
     const image = 'ipfs://' + screenshotCid;
@@ -60,7 +59,7 @@ export const adapterResponse = async (request: Request, response: Response) => {
       '\n' +
       ' Check metadata fields for more details.';
 
-    const nftMetadataCid = await updloadTweetToCAS(
+    const nftMetadataCid = await uploadToCAS(
       JSON.stringify({
         name,
         image,
@@ -70,6 +69,7 @@ export const adapterResponse = async (request: Request, response: Response) => {
         url: requestUrl,
         attributes: metadataToAttirbutes(JSON.parse(metadata.metadata)),
       }),
+      client,
     );
 
     const data = {

@@ -17,7 +17,7 @@ import {
   IScreenShotBuffersToUpload,
   ITweetTimelineEntry,
 } from '../types';
-import { DEFAULT_TIMEOUT_MS } from '../config';
+import { DEFAULT_TIMEOUT_MS, screenshotResponseDataOrderedKeys } from '../config';
 import fs from 'fs/promises';
 import path from 'path';
 import { processPWD } from '../prestart';
@@ -29,60 +29,39 @@ import { makeBufferFromBase64ImageUrl, makeStampedImage } from './images';
 import { createTweetData } from '../models';
 import { uploadQueue } from '../queue';
 
-export const getMetaDataPromise = (page: Page, tweetUrl: string) =>
+export const getMetaDataPromise = (page: Page, tweetId: string) =>
   new Promise<string>((resolve, reject) => {
+    const tweetUrl = makeTweetUrlWithId(tweetId);
     page.on('response', async (puppeteerResponse: HTTPResponse) => {
       const responseUrl = puppeteerResponse.url();
       const trimmedResponseUrl = trimUrl(responseUrl);
       if (trimmedResponseUrl === tweetUrl) {
         const headers = puppeteerResponse.headers();
-        const { ip } = puppeteerResponse.remoteAddress();
-        const host = getHostWithoutWWW(tweetUrl);
-
-        const dnsResult = await getDnsInfo(host, ['+trace', 'any']).catch((e) => {
-          console.log('dns catch', e);
-        });
-        const dns = typeof dnsResult === 'string' ? dnsResult.split('\n') : [];
-
-        // if dns === [], no dns data
+        const host = 'twitter.com';
+        const dns = await getDnsInfo(host);
         const meta: IMetadata = {
           headers,
-          ip: ip || 'n/a',
+          ip: puppeteerResponse.remoteAddress().ip!,
           url: responseUrl,
           dns: { host, data: dns },
         };
         resolve(JSON.stringify(meta));
       }
-      setTimeout(() => reject('failed to get metadata'), DEFAULT_TIMEOUT_MS);
+      setTimeout(() => reject(`failed to get tweet ${tweetId} metadata`), DEFAULT_TIMEOUT_MS);
     });
   });
 
 export const getTweetDataPromise = (page: Page, tweetId: string) =>
   new Promise<string>((resolve, reject) => {
-    try {
-      page.on('response', async (puppeteerResponse: HTTPResponse) => {
-        try {
-          const responseUrl = puppeteerResponse.url();
+    page.on('response', async (puppeteerResponse: HTTPResponse) => {
+      const responseUrl = puppeteerResponse.url();
 
-          if (responseUrl.match(/TweetDetail/g)) {
-            const responseData = await puppeteerResponse.text();
-
-            await fs.writeFile(
-              path.resolve(processPWD, 'data', tweetDataPathFromTweetId(tweetId)),
-              responseData,
-            );
-            resolve(responseData);
-          }
-          setTimeout(() => reject('failed to get tweet data'), DEFAULT_TIMEOUT_MS);
-        } catch (error) {
-          console.error(error);
-          reject(null);
-        }
-      });
-    } catch (error) {
-      console.error(error);
-      reject(null);
-    }
+      if (responseUrl.match(/TweetDetail/g)) {
+        const responseData = await puppeteerResponse.text();
+        resolve(responseData);
+      }
+      setTimeout(() => reject(`failed to get tweet ${tweetId} tweet data`), DEFAULT_TIMEOUT_MS);
+    });
   });
 
 export const screenshotWithPuppeteer = async (
@@ -90,116 +69,109 @@ export const screenshotWithPuppeteer = async (
   response: Response,
 ): Promise<Response> => {
   try {
-    const { tweetId, userId } = request.query as {
-      tweetId: string;
-      userId: string;
-    };
-    const jobs = await uploadQueue.getJobs(['active'])    
-
-    const activeJob = jobs.find((job) => job.data.userId === userId);
-    if (!!activeJob) {
-      const data = activeJob.data;
-      const { stampedImageBuffer, metadata, tweetdata } = data;
-
-      const responseData: IGetScreenshotResponseData = {
-        imageUrl: makeImageBase64UrlfromBuffer(Buffer.from(stampedImageBuffer!)),
-        metadata,
-        tweetdata,
-      };
-      response.set('Content-Type', 'application/json');
-      return response.status(200).send({ ...responseData, jobId: activeJob.id });
-    }
-
-    if (!isValidUint64(tweetId)) {
-      return reportError('invalid tweeetId', response);
-    }
-    const tweetUrl = makeTweetUrlWithId(tweetId);
-
-    const browser = await puppeteer.launch({
-      args: puppeteerDefaultConfig.launch.args,
-    });
-
-    const page = await browser.newPage();
-
-    const screenshotPath = path.resolve(processPWD, 'data', pngPathFromTweetId(tweetId));
-
-    await page.setViewport({
-      ...puppeteerDefaultConfig.viewport,
-      deviceScaleFactor: 1,
-    });
-    await page.setUserAgent(puppeteerDefaultConfig.userAgent);
-
-    const screenShotPromise = page
-      .goto(tweetUrl, puppeteerDefaultConfig.page.goto)
-      .then(async () => {
-        const screenshotImageBuffer: Buffer = await page.screenshot({
-          path: screenshotPath,
-        });
-
-        return makeImageBase64UrlfromBuffer(screenshotImageBuffer);
-      });
-
-    const fetchedData = (
-      await Promise.allSettled<string>([
-        getTweetDataPromise(page, tweetId),
-        getMetaDataPromise(page, tweetUrl),
-        screenShotPromise,
-      ])
-    ).reduce<IGetScreenshotResponseData>(
-      (acc, val, index) => {
-        const orderedKeys: (keyof IGetScreenshotResponseData)[] = [
-          'tweetdata',
-          'metadata',
-          'imageUrl',
-        ];
-
-        acc[orderedKeys[index]] = val.status === 'fulfilled' ? val.value : null;
-        return acc;
-      },
-      {
-        imageUrl: null,
-        metadata: null,
-        tweetdata: null,
-      },
-    );
-
-    const screenshotImageUrl = fetchedData.imageUrl;
-    const screenshotImageBuffer = makeBufferFromBase64ImageUrl(screenshotImageUrl!);
-    const stampedImageBuffer = await makeStampedImage(screenshotImageUrl!, fetchedData.metadata!);
-    const stampedImageUrl = makeImageBase64UrlfromBuffer(stampedImageBuffer!);
-    const responseData: IGetScreenshotResponseData = { ...fetchedData, imageUrl: stampedImageUrl };
-
-    const tweetEntries: ITweetTimelineEntry[] = getTweetTimelineEntries(
-      responseData.tweetdata!,
-    ).filter((entry) => entry.entryId === `tweet-${tweetId}`);
-
-    const tweetsData = tweetEntries.map((entry) => {
-      return createTweetData(entry.content.itemContent.tweet_results.result);
-    });
-
-    const tweetsDataUrlsToUpload = tweetsData.flatMap<string>(getMediaUrlsToUpload);
-
-    const mediaUrls = Array.from(new Set([...tweetsDataUrlsToUpload]));
-
-    const uploadJob = await uploadQueue.add({
-      tweetId,
-      userId,
-      metadata: fetchedData.metadata,
-      tweetdata: fetchedData.tweetdata,
-      screenshotImageBuffer,
-      stampedImageBuffer,
-      mediaUrls,
-    });
-
-    browser.close();
-
-    response.set('Content-Type', 'application/json');
-    return response.status(200).send({ ...responseData, jobId: uploadJob.id });
+    return getScreenshotWithPuppeteer(request, response);
   } catch (error) {
-    console.log(`controller error:  ${error}`);
-    if (error instanceof Error) {
-      return response.status(502).json({ error: error.message });
-    }
-    return response.status(502).json({ error: `Unknown error: ${error}` });
+    return response
+      .status(502)
+      .json({ error: `screenshotWithPuppeteer controller error:  ${error}` });
   }
+};
+
+const getScreenshotWithPuppeteer = async (
+  request: Request,
+  response: Response,
+): Promise<Response> => {
+  const { tweetId, userId } = request.query as {
+    tweetId: string;
+    userId: string;
+  };
+  const jobs = await uploadQueue.getJobs(['active']);
+
+  const activeJob = jobs.find((job) => job.data.userId === userId);
+  if (!!activeJob) {
+    const data = activeJob.data;
+    const { stampedImageBuffer, metadata, tweetdata } = data;
+
+    const responseData: IGetScreenshotResponseData = {
+      imageUrl: makeImageBase64UrlfromBuffer(Buffer.from(stampedImageBuffer!)),
+      metadata,
+      tweetdata,
+    };
+    response.set('Content-Type', 'application/json');
+    return response.status(200).send({ ...responseData, jobId: activeJob.id });
+  }
+
+  if (!isValidUint64(tweetId)) {
+    return reportError('invalid tweeetId', response);
+  }
+  const tweetUrl = makeTweetUrlWithId(tweetId);
+
+  const browser = await puppeteer.launch({
+    args: puppeteerDefaultConfig.launch.args,
+  });
+
+  const page = await browser.newPage();
+
+  await page.setViewport({
+    ...puppeteerDefaultConfig.viewport,
+    deviceScaleFactor: 1,
+  });
+  await page.setUserAgent(puppeteerDefaultConfig.userAgent);
+
+  const screenShotPromise = page
+    .goto(tweetUrl, puppeteerDefaultConfig.page.goto.gotoWaitUntilIdle)
+    .then(async () => {
+      const screenshotImageBuffer: Buffer = await page.screenshot();
+
+      return makeImageBase64UrlfromBuffer(screenshotImageBuffer);
+    });
+
+  const fetchedData = (
+    await Promise.allSettled<string>([
+      getTweetDataPromise(page, tweetId),
+      getMetaDataPromise(page, tweetId),
+      screenShotPromise,
+    ])
+  ).reduce<IGetScreenshotResponseData>(
+    (acc, val, index) => {
+      acc[screenshotResponseDataOrderedKeys[index]] = val.status === 'fulfilled' ? val.value : null;
+      return acc;
+    },
+    {
+      imageUrl: null,
+      metadata: null,
+      tweetdata: null,
+    },
+  );
+
+  const screenshotImageUrl = fetchedData.imageUrl;
+  const screenshotImageBuffer = makeBufferFromBase64ImageUrl(screenshotImageUrl!);
+  const stampedImageBuffer = await makeStampedImage(screenshotImageUrl!, fetchedData.metadata!);
+  const stampedImageUrl = makeImageBase64UrlfromBuffer(stampedImageBuffer!);
+  const responseData: IGetScreenshotResponseData = { ...fetchedData, imageUrl: stampedImageUrl };
+
+  const tweetEntry: ITweetTimelineEntry = getTweetTimelineEntries(responseData.tweetdata!).find(
+    (entry) => entry.entryId === `tweet-${tweetId}`,
+  )!;
+
+  const tweetData = createTweetData(tweetEntry.content.itemContent.tweet_results.result);
+
+  const tweetsDataUrlsToUpload = getMediaUrlsToUpload(tweetData);
+
+  const mediaUrls = Array.from(new Set([...tweetsDataUrlsToUpload]));
+
+  const uploadJob = await uploadQueue.add({
+    tweetId,
+    userId,
+    metadata: fetchedData.metadata,
+    tweetdata: fetchedData.tweetdata,
+    screenshotImageBuffer,
+    stampedImageBuffer,
+    mediaUrls,
+  });
+
+  browser.close();
+
+  response.set('Content-Type', 'application/json');
+  return response.status(200).send({ ...responseData, jobId: uploadJob.id });
 };

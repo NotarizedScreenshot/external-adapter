@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "private": true,
   "description": "Quantum Oracle helps create verified screenshots - NFTs proving that whatever their minter found on the net actually existed at that moment.",
-  "main": "src/server.cjs",
   "scripts": {
     "start:dev": "nodemon --ignore data/ dist/",
     "dev:ts": "tsc && node dist/index.js",
