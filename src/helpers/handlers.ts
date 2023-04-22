@@ -121,7 +121,12 @@ const getScreenshotWithPuppeteer = async (
   const screenShotPromise = page
     .goto(tweetUrl, puppeteerDefaultConfig.page.goto.gotoWaitUntilIdle)
     .then(async () => {
-      const screenshotImageBuffer: Buffer = await page.screenshot();
+      const articleElement = (await page.waitForSelector('article'))!;
+      const boundingBox = (await articleElement.boundingBox())!;
+
+      const screenshotImageBuffer: Buffer = await page.screenshot({
+        clip: { ...boundingBox },
+      });
 
       return makeImageBase64UrlfromBuffer(screenshotImageBuffer);
     });
@@ -129,6 +134,7 @@ const getScreenshotWithPuppeteer = async (
   const fetchedData = (
     await Promise.allSettled<string>([
       getTweetDataPromise(page, tweetId),
+
       getMetaDataPromise(page, tweetId),
       screenShotPromise,
     ])
@@ -158,20 +164,20 @@ const getScreenshotWithPuppeteer = async (
 
   const tweetsDataUrlsToUpload = getMediaUrlsToUpload(tweetData);
 
-  const mediaUrls = Array.from(new Set([...tweetsDataUrlsToUpload]));
+  // const mediaUrls = Array.from(new Set([...tweetsDataUrlsToUpload]));
 
-  const uploadJob = await uploadQueue.add({
-    tweetId,
-    userId,
-    metadata: fetchedData.metadata,
-    tweetdata: fetchedData.tweetdata,
-    screenshotImageBuffer,
-    stampedImageBuffer,
-    mediaUrls,
-  });
+  // const uploadJob = await uploadQueue.add({
+  //   tweetId,
+  //   userId,
+  //   metadata: fetchedData.metadata,
+  //   tweetdata: fetchedData.tweetdata,
+  //   screenshotImageBuffer,
+  //   stampedImageBuffer,
+  //   mediaUrls,
+  // });
 
   browser.close();
 
   response.set('Content-Type', 'application/json');
-  return response.status(200).send({ ...responseData, jobId: uploadJob.id });
+  return response.status(200).send({ ...responseData });
 };
