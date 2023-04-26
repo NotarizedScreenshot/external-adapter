@@ -2,7 +2,11 @@ import chai, { expect } from 'chai';
 import chaiHttp from 'chai-http';
 import { Server } from 'http';
 import dotenv from 'dotenv';
-import startServer from '../src/server';
+import { startServer } from '../src/index';
+// import startServer from '../src/server';
+// Had to use addtional export of start server function
+// as if use direct import from src/server.ts get ab error:
+// TypeError: (0 , server_1.default) is not a function
 
 dotenv.config({ path: process.env.PWD + '/config.env' });
 
@@ -14,10 +18,8 @@ describe('testing routes', async () => {
     if (!process.env.DEFAULT_HTTP_TEST_PORT)
       throw new Error(`default test port: ${process.env.DEFAULT_HTTP_TEST_PORT}`);
 
-    startServer(process.env.DEFAULT_HTTP_TEST_PORT).then((newServer) => {
-      server = newServer;
-      done();
-    });
+    server = startServer(process.env.DEFAULT_HTTP_TEST_PORT);
+    done();
   });
 
   after((done) => {
@@ -92,7 +94,26 @@ describe('testing routes', async () => {
     });
   });
 
-    describe('testing POST /adapter_response', () => {
-      //TODO: write tests
+  describe('testing POST /adapter_response', () => {
+    //TODO: write tests
+    it('empty request body', (done) => {
+      chai
+        .request(server)
+        .post('/adapter_response.json')
+        .end((err, res) => {
+          expect(res.ok).to.be.false;
+          done();
+        });
     });
+    it('unknown tweet id', (done) => {
+      chai
+        .request(server)
+        .post('/adapter_response.json')
+        .send({ url: '1234566' })
+        .end((err, res) => {
+          expect(res.ok).to.be.false;
+          done();
+        });
+    });
+  });
 });

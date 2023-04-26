@@ -39,6 +39,8 @@ describe('helper test', () => {
     });
   });
   describe('test makeTweetUrlWithId', () => {
-    //TODO: write tests
+    it('is tweet link', () => {
+      expect(makeTweetUrlWithId('1234124123')).to.contain('https://twitter.com/twitter/status/');
+    });
   });
 });
