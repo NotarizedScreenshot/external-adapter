@@ -1,6 +1,7 @@
-import { ITweetBody, ITweetCard, ITweetData, ITweetDetails, ITweetUser } from 'types';
+import { ITweetBody, ITweetData, ITweetDetails, ITweetResults, ITweetUser } from 'types';
 
-export const createTweetData = (legacy: any, views: any, core: any, card: any): ITweetData => {
+export const createTweetData = (tweetResults: ITweetResults): ITweetData => {
+  const { legacy, views, core, card } = tweetResults;
   const {
     full_text,
     created_at,
@@ -39,6 +40,7 @@ export const createTweetData = (legacy: any, views: any, core: any, card: any): 
     'description',
     'domain',
     'thumbnail_image_original',
+    'player_image_original',
   ];
 
   const cardData: ITweetBody['card'] = !card

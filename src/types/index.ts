@@ -7,10 +7,33 @@ export interface IMetadata {
 
 export type TMetadataAttributes = { trait_type: string; value: string }[];
 
+export interface ITweetResults {
+  legacy: {
+    full_text: string;
+    created_at: string;
+    favorite_count: number;
+    quote_count: number;
+    retweet_count: number;
+    entities: {
+      user_mentions: { screen_name: string }[];
+      urls: { expanded_url: string }[];
+      hashtags: { text: string }[];
+      symbols: { text: string }[];
+    };
+    extended_entities: {
+      media: any;
+    };
+  };
+  views: any;
+  core: any;
+  card: any;
+}
+
 export interface ITweetCard {
   description: string;
   domain: string;
   thumbnail_image_original: string;
+  player_image_original: string;
   vanity_url: string;
   title: string;
   card_url: string;
@@ -43,4 +66,66 @@ export interface ITweetData {
   body: ITweetBody;
   user: ITweetUser;
   details: ITweetDetails;
+}
+
+export type ITweetRawData = string;
+
+export interface IGetScreenshotResponseData {
+  imageUrl: string | null;
+  metadata: string | null;
+  tweetdata: string | null;
+}
+
+export type ITweetPageMetaData = [IMetadata | null, ITweetRawData | null];
+
+export interface ITweetTimelineEntry {
+  entryId: string;
+  sortIndex: string;
+  content: {
+    entryType: string;
+    itemContent: {
+      itemType: string;
+      tweet_results: {
+        result: ITweetResults;
+      };
+    };
+  };
+}
+
+export interface IScreenShotBuffersToUpload {
+  screenshotImageBuffer: Buffer | null;
+  stampedImageBuffer: Buffer | null;
+}
+
+export interface IContentItem {
+  item: {
+    item: {
+      itemContent: {
+        itemType: string;
+        tweet_results: {
+          result: ITweetData;
+        };
+      };
+    };
+  };
+}
+
+export interface IThreadEntry {
+  entryId: string;
+  content: { items: IContentItem[] };
+}
+
+export interface IThreadData {
+  entryId: string;
+  items: ITweetData[];
+}
+
+export interface IUploadJobData {
+  tweetId: string;
+  userId: string;
+  metadata: string | null;
+  tweetdata: string | null;
+  screenshotImageBuffer: Buffer | null;
+  stampedImageBuffer: Buffer | null;
+  mediaUrls: string[];
 }

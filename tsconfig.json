@@ -104,5 +104,8 @@
     
   },
   // "include": ["src/ts"],
-  "exclude": ["./dist", "/src/cjs"]
+  "ts-node": {
+    "files": true
+  },
+  "exclude": ["./dist", "/src/cjs", "./tests"]
 }
