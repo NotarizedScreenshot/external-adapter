@@ -26,58 +26,60 @@ import { NFTStorage } from 'nft.storage';
 
 export const adapterResponse = async (request: Request, response: Response) => {
   try {
-    const requestUrl = request.body.data.url;
-    const tweetId = request.body.data.url as string;
-    const metadataCidPath = path.resolve(processPWD, 'data', metadataCidPathFromTweetId(tweetId));
-    const metadataCid = JSON.parse(await fs.readFile(metadataCidPath, 'utf-8'))[tweetId];
+    console.log('request body', request.body);
+    const requestUrl = request.body.data.tweetId;
+    const tweetId = request.body.data.tweetId as string;
+    // const metadataCidPath = path.resolve(processPWD, 'data', metadataCidPathFromTweetId(tweetId));
+    // const metadataCid = JSON.parse(await fs.readFile(metadataCidPath, 'utf-8'))[tweetId];
 
-    const trimmedUrl = trimUrl(requestUrl);
+    // const trimmedUrl = trimUrl(requestUrl);
 
-    const metadataResponse = await axios.get(`${IPFS_GATEWAY_BASE_URL}${metadataCid}`);
-    const metadata = metadataResponse.data;
-    const screenshotPath = path.resolve(processPWD, 'data', pngPathFromUrl(trimmedUrl));
+    // const metadataResponse = await axios.get(`${IPFS_GATEWAY_BASE_URL}${metadataCid}`);
+    // const metadata = metadataResponse.data;
+    // const screenshotPath = path.resolve(processPWD, 'data', pngPathFromUrl(trimmedUrl));
 
-    const screenshotBuffer = await fs.readFile(screenshotPath);
+    // const screenshotBuffer = await fs.readFile(screenshotPath);
 
-    const trustedSha256sum = getTrustedHashSum(screenshotBuffer);
+    // const trustedSha256sum = getTrustedHashSum(screenshotBuffer);
 
-    const client = new NFTStorage({ token: process.env.NFT_STORAGE_TOKEN! });
-    const screenshotCid = await uploadToCAS(screenshotBuffer, client);
+    // const client = new NFTStorage({ token: process.env.NFT_STORAGE_TOKEN! });
+    // const screenshotCid = await uploadToCAS(screenshotBuffer, client);
 
-    const name = 'Notarized Screenshot 0x' + trustedSha256sum;
-    const image = 'ipfs://' + screenshotCid;
-    const ts = Date.now();
-    const time = new Date(ts).toUTCString();
+    // const name = 'Notarized Screenshot 0x' + trustedSha256sum;
+    // const image = 'ipfs://' + screenshotCid;
+    // const ts = Date.now();
+    // const time = new Date(ts).toUTCString();
 
-    //TODO: to be revised as a template string
-    const description =
-      name +
-      ' by QuantumOracle, result of verifying the image served at URL \n' +
-      requestUrl +
-      ' at ts ' +
-      time +
-      '\n' +
-      ' Check metadata fields for more details.';
+    // //TODO: to be revised as a template string
+    // const description =
+    //   name +
+    //   ' by QuantumOracle, result of verifying the image served at URL \n' +
+    //   requestUrl +
+    //   ' at ts ' +
+    //   time +
+    //   '\n' +
+    //   ' Check metadata fields for more details.';
 
-    const nftMetadataCid = await uploadToCAS(
-      JSON.stringify({
-        name,
-        image,
-        description,
-        ts,
-        time,
-        url: requestUrl,
-        attributes: metadataToAttirbutes(JSON.parse(metadata.metadata)),
-      }),
-      client,
-    );
+    // const nftMetadataCid = await uploadToCAS(
+    //   JSON.stringify({
+    //     name,
+    //     image,
+    //     description,
+    //     ts,
+    //     time,
+    //     url: requestUrl,
+    //     attributes: metadataToAttirbutes(JSON.parse(metadata.metadata)),
+    //   }),
+    //   client,
+    // );
 
     const data = {
       data: {
-        url: requestUrl,
-        sha256sum: trustedSha256sum,
-        cid: screenshotCid,
-        metadataCid: nftMetadataCid,
+        // url: tweetId,
+        // sha256sum: trustedSha256sum,
+        // cid: screenshotCid,
+        cid: 'bafkreibtgzos4xnqgckvwftclr5ech7opvw3rzezinm3fklbnfixasq7ra',
+        // metadataCid: nftMetadataCid,
       },
     };
     response.status(200).json(data);
