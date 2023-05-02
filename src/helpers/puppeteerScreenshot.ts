@@ -52,6 +52,8 @@ export const puppeteerScreenshot = async (tweetId: string): Promise<Buffer> => {
         const dnsResult = await getDnsInfo(host, ['+trace', 'any']).catch((e) => {
           console.log('dns catch', e);
         });
+        //TODO @poludnev pls check
+        //@ts-ignore
         const dns = typeof dnsResult === 'string' ? dnsResult.split('\n') : [];
 
         // if dns === [], no dns data

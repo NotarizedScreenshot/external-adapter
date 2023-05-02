@@ -164,17 +164,17 @@ const getScreenshotWithPuppeteer = async (
 
   const tweetsDataUrlsToUpload = getMediaUrlsToUpload(tweetData);
 
-  // const mediaUrls = Array.from(new Set([...tweetsDataUrlsToUpload]));
+  const mediaUrls = Array.from(new Set([...tweetsDataUrlsToUpload]));
 
-  // const uploadJob = await uploadQueue.add({
-  //   tweetId,
-  //   userId,
-  //   metadata: fetchedData.metadata,
-  //   tweetdata: fetchedData.tweetdata,
-  //   screenshotImageBuffer,
-  //   stampedImageBuffer,
-  //   mediaUrls,
-  // });
+  const uploadJob = await uploadQueue.add({
+    tweetId,
+    userId,
+    metadata: fetchedData.metadata,
+    tweetdata: fetchedData.tweetdata,
+    screenshotImageBuffer,
+    stampedImageBuffer,
+    mediaUrls,
+  });
 
   browser.close();
 
