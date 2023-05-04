@@ -160,6 +160,8 @@ const getScreenshotWithPuppeteer = async (
       },
     );
 
+    console.log(fetchedData);
+
     const screenshotImageUrl = fetchedData.imageUrl;
     const screenshotImageBuffer = makeBufferFromBase64ImageUrl(screenshotImageUrl!);
     const stampedImageBuffer = await makeStampedImage(screenshotImageUrl!, fetchedData.metadata!);
