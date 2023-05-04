@@ -57,6 +57,7 @@ export const getTweetDataPromise = (page: Page, tweetId: string) =>
       const responseUrl = puppeteerResponse.url();
 
       if (responseUrl.match(/TweetDetail/g)) {
+        console.log('resonse', responseUrl);
         const responseData = await puppeteerResponse.text();
         resolve(responseData);
       }
@@ -154,7 +155,7 @@ const getScreenshotWithPuppeteer = async (
   const screenshotImageBuffer = makeBufferFromBase64ImageUrl(screenshotImageUrl!);
   const stampedImageBuffer = await makeStampedImage(screenshotImageUrl!, fetchedData.metadata!);
   const stampedImageUrl = makeImageBase64UrlfromBuffer(stampedImageBuffer!);
-  const responseData: IGetScreenshotResponseData = { ...fetchedData, imageUrl: stampedImageUrl };
+  const responseData: IGetScreenshotResponseData = { ...fetchedData };
 
   const tweetEntry: ITweetTimelineEntry = getTweetTimelineEntries(responseData.tweetdata!).find(
     (entry) => entry.entryId === `tweet-${tweetId}`,
