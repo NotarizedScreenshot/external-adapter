@@ -58,11 +58,13 @@ export const getTweetDataPromise = (page: Page, tweetId: string) =>
       try {
         const responseUrl = puppeteerResponse.url();
         const headers = puppeteerResponse.headers();
+        console.log(headers);
 
         if (
           responseUrl.match(/TweetDetail/g) &&
           headers['content-type'].includes('application/json')
         ) {
+          // console.log(headers);
           const responseData = await puppeteerResponse.text();
           resolve(responseData);
         }
