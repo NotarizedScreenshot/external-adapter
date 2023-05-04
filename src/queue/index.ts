@@ -1,14 +1,14 @@
 import fs from 'fs/promises';
 import path from 'path';
 import axios from 'axios';
-import Queue from 'bull';
+import Queue, { QueueOptions } from 'bull';
 import { processPWD } from '../prestart';
 import { getSocketByUserId, metadataCidPathFromTweetId } from '../helpers';
 import { uploadToCAS } from '../helpers/nftStorage';
 import { IUploadJobData } from '../types';
 import { NFTStorage } from 'nft.storage';
 
-export const uploadQueue = new Queue<IUploadJobData>('upload_screen_shot');
+export const uploadQueue = new Queue<IUploadJobData>('upload_screen_shot', 'redis://redis:6379'); //TODO to .env.local
 
 uploadQueue.process(async (job) => {
   console.log(`uploadQueue job id:${job.id} name: ${job.name} started `);
