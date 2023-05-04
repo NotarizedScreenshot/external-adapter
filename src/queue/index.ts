@@ -63,6 +63,8 @@ uploadQueue.process(async (job) => {
   const metadataToSaveCid = await uploadToCAS(JSON.stringify(metadataToSave), client);
   job.progress(90);
 
+  console.log('metadataToSaveCid', metadataToSaveCid);
+
   await fs.writeFile(
     path.resolve(processPWD, 'data', metadataCidPathFromTweetId(tweetId)),
     JSON.stringify({ [tweetId]: metadataToSaveCid }),
