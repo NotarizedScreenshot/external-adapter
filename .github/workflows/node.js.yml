@@ -1,0 +1,41 @@
+name: Node.js CI
+
+on:
+  push:
+    branches: [ '**' ]
+    tags:
+      - v*
+  pull_request:
+    branches: [ '**' ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    # Containers must run in Linux based operating systems
+    container: node:18-bullseye
+
+    services:
+      redis:
+        image: redis
+
+    strategy:
+      matrix:
+        node-version: [ 18.x ]
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'yarn'
+      - run: yarn install
+      - run: yarn global add typescript
+      - run: tsc
+      - run: yarn test
+      - name: QuantumOracle Adapter Build
+        id: qo-adapter-dist
+        uses: actions/upload-artifact@v3
+        with:
+          name: qo-adapter-dist-${{ github.run_id }}
+          path: ./dist

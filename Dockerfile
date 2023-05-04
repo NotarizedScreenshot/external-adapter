@@ -14,8 +14,8 @@ RUN npm install typescript -g
 RUN npm install
 RUN tsc
 
-ARG user=appuser
-ARG group=appuser
+ARG user=quantumoracle
+ARG group=quantumoracle
 ARG uid=2000
 ARG gid=2000
 
