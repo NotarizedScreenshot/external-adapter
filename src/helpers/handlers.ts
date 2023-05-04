@@ -55,25 +55,20 @@ export const getMetaDataPromise = (page: Page, tweetId: string) =>
 export const getTweetDataPromise = (page: Page, tweetId: string) =>
   new Promise<string>((resolve, reject) => {
     page.on('response', async (puppeteerResponse: HTTPResponse) => {
-      try {
-        const responseUrl = puppeteerResponse.url();
-        const headers = puppeteerResponse.headers();
-        // console.log(headers);
+      const responseUrl = puppeteerResponse.url();
+      const headers = puppeteerResponse.headers();
+      // console.log(headers);
 
-        if (
-          responseUrl.match(/TweetDetail/g) &&
-          headers['content-type'] &&
-          headers['content-type'].includes('application/json')
-        ) {
-          console.log(headers);
-          const responseData = await puppeteerResponse.text();
-          resolve(responseData);
-        }
-        setTimeout(() => reject(`failed to get tweet ${tweetId} tweet data`), DEFAULT_TIMEOUT_MS);
-      } catch (e) {
-        reject(e);
-        console.log('getTweetPromise', e);
+      if (
+        responseUrl.match(/TweetDetail/g) &&
+        headers['content-type'] &&
+        headers['content-type'].includes('application/json')
+      ) {
+        console.log(headers);
+        const responseData = await puppeteerResponse.text();
+        resolve(responseData);
       }
+      setTimeout(() => reject(`failed to get tweet ${tweetId} tweet data`), DEFAULT_TIMEOUT_MS);
     });
   });
 
