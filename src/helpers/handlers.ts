@@ -191,7 +191,7 @@ const getScreenshotWithPuppeteer = async (
     response.set('Content-Type', 'application/json');
     return response.status(200).send({ ...responseData });
   } catch (error) {
-    console.log('getScreenshotWithPuppeteer');
+    console.log('getScreenshotWithPuppeteer', error);
     return response.status(200);
   }
 };
