@@ -1,4 +1,4 @@
-FROM node:16-bullseye
+FROM node:18-bullseye
 
 WORKDIR /app
 RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
@@ -10,7 +10,8 @@ RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key
 
 COPY . .
 
-RUN npm i && npm install typescript -g
+RUN npm install typescript -g
+RUN npm install
 RUN tsc
 
 ARG user=appuser
