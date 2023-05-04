@@ -60,6 +60,7 @@ export const getTweetDataPromise = (page: Page, tweetId: string) =>
 
         if (responseUrl.match(/TweetDetail/g)) {
           console.log('resonse', responseUrl);
+          console.log('header', puppeteerResponse.headers())
           const responseData = await puppeteerResponse.text();
           resolve(responseData);
         }
