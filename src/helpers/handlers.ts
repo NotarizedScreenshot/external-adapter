@@ -57,14 +57,12 @@ export const getTweetDataPromise = (page: Page, tweetId: string) =>
     page.on('response', async (puppeteerResponse: HTTPResponse) => {
       const responseUrl = puppeteerResponse.url();
       const headers = puppeteerResponse.headers();
-      // console.log(headers);
 
       if (
         responseUrl.match(/TweetDetail/g) &&
         headers['content-type'] &&
         headers['content-type'].includes('application/json')
       ) {
-        console.log(headers);
         const responseData = await puppeteerResponse.text();
         resolve(responseData);
       }
@@ -130,7 +128,14 @@ const getScreenshotWithPuppeteer = async (
     const screenShotPromise = page
       .goto(tweetUrl, puppeteerDefaultConfig.page.goto.gotoWaitUntilIdle)
       .then(async () => {
+        await page.evaluate(() => {
+          const bottomBar = document.querySelector('[data-testid="BottomBar"]') as HTMLElement;
+          if (bottomBar) {
+            bottomBar.style.display = 'none';
+          }
+        });
         const articleElement = (await page.waitForSelector('article'))!;
+
         const boundingBox = (await articleElement.boundingBox())!;
 
         const screenshotImageBuffer: Buffer = await page.screenshot({
@@ -160,8 +165,6 @@ const getScreenshotWithPuppeteer = async (
       },
     );
 
-    console.log(fetchedData);
-
     const screenshotImageUrl = fetchedData.imageUrl;
     const screenshotImageBuffer = makeBufferFromBase64ImageUrl(screenshotImageUrl!);
     const stampedImageBuffer = await makeStampedImage(screenshotImageUrl!, fetchedData.metadata!);
@@ -176,17 +179,17 @@ const getScreenshotWithPuppeteer = async (
 
     const tweetsDataUrlsToUpload = getMediaUrlsToUpload(tweetData);
 
-    // const mediaUrls = Array.from(new Set([...tweetsDataUrlsToUpload]));
+    const mediaUrls = Array.from(new Set([...tweetsDataUrlsToUpload]));
 
-    // const uploadJob = await uploadQueue.add({
-    //   tweetId,
-    //   userId,
-    //   metadata: fetchedData.metadata,
-    //   tweetdata: fetchedData.tweetdata,
-    //   screenshotImageBuffer,
-    //   stampedImageBuffer,
-    //   mediaUrls,
-    // });
+    const uploadJob = await uploadQueue.add({
+      tweetId,
+      userId,
+      metadata: fetchedData.metadata,
+      tweetdata: fetchedData.tweetdata,
+      screenshotImageBuffer,
+      stampedImageBuffer,
+      mediaUrls,
+    });
 
     browser.close();
 

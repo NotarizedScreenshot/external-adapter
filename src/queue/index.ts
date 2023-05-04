@@ -23,8 +23,6 @@ uploadQueue.process(async (job) => {
     userId,
   } = job.data;
 
-  console.log(job.data);
-
   const client = new NFTStorage({ token: process.env.NFT_STORAGE_TOKEN! });
 
   const screenshotCid = await uploadToCAS(Buffer.from(screenshotImageBuffer!), client);
