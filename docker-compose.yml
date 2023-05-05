@@ -4,5 +4,17 @@ services:
     image: chainhackers/quantumoracle-adapter:latest
     ports:
       - "9000:9000"
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 10
+        window: 600s
   redis:
     image: "redis:alpine"
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s
