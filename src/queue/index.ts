@@ -8,7 +8,8 @@ import { uploadToCAS } from '../helpers/nftStorage';
 import { IUploadJobData } from '../types';
 import { NFTStorage } from 'nft.storage';
 
-export const uploadQueue = new Queue<IUploadJobData>('upload_screen_shot', 'redis://redis:6379'); //TODO to .env.local
+const redis = `redis://${process.env.REDIS_HOST}:6379`
+export const uploadQueue = new Queue<IUploadJobData>('upload_screen_shot', redis);
 
 uploadQueue.process(async (job) => {
   console.log(`uploadQueue job id:${job.id} name: ${job.name} started `);
