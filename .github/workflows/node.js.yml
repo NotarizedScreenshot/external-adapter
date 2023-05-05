@@ -22,6 +22,9 @@ jobs:
       matrix:
         node-version: [ 18.x ]
 
+    env:
+      REDIS_HOST: redis
+
     steps:
       - uses: actions/checkout@v3
       - name: Use Node.js ${{ matrix.node-version }}
