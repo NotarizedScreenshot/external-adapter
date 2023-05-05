@@ -22,8 +22,8 @@ ARG gid=2000
 RUN groupadd -g ${gid} ${group}
 RUN useradd -u ${uid} -g ${group} -s /bin/sh -m ${user}
 
-RUN chown appuser /app
-
+RUN chown ${user} /app
+ENV REDIS_HOST=redis
 USER ${uid}:${gid}
 
 CMD ["npm", "start"]
