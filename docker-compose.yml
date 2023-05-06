@@ -1,7 +1,7 @@
 version: "3.9"
 services:
   notaryshot-adapter:
-    image: chainhackers/quantumoracle-adapter:latest
+    image: "chainhackers/quantumoracle-adapter:${TAG}"
     ports:
       - "9000:9000"
     deploy:

@@ -88,6 +88,10 @@ const getScreenshotWithPuppeteer = async (
   const jobs = await uploadQueue.getJobs(['active']);
 
   const activeJob = jobs.find((job) => job.data.userId === userId);
+
+  if (!isValidUint64(tweetId)) {
+    return reportError('invalid tweeetId', response);
+  }
   if (!!activeJob) {
     const data = activeJob.data;
     const { stampedImageBuffer, metadata, tweetdata } = data;
@@ -101,16 +105,19 @@ const getScreenshotWithPuppeteer = async (
     return response.status(200).send({ ...responseData, jobId: activeJob.id });
   }
 
-  if (!isValidUint64(tweetId)) {
-    return reportError('invalid tweeetId', response);
-  }
   const tweetUrl = makeTweetUrlWithId(tweetId);
+
+  console.log('tweetUrl: ', tweetUrl);
 
   const browser = await puppeteer.launch({
     args: puppeteerDefaultConfig.launch.args,
   });
 
+  console.log('browser', browser);
+
   const page = await browser.newPage();
+
+  console.log('page', page);
 
   await page.setViewport({
     ...puppeteerDefaultConfig.viewport,
@@ -127,6 +134,8 @@ const getScreenshotWithPuppeteer = async (
       const screenshotImageBuffer: Buffer = await page.screenshot({
         clip: { ...boundingBox },
       });
+
+      // console.log(screenshotImageBuffer);
 
       return makeImageBase64UrlfromBuffer(screenshotImageBuffer);
     });
@@ -162,7 +171,9 @@ const getScreenshotWithPuppeteer = async (
 
   const tweetData = createTweetData(tweetEntry.content.itemContent.tweet_results.result);
 
-  const tweetsDataUrlsToUpload = getMediaUrlsToUpload(tweetData);
+  const tweetsDataUrlsToUpload = tweetData ? getMediaUrlsToUpload(tweetData) : [];
+  //TODO: Issue 52: https://github.com/orgs/NotarizedScreenshot/projects/1/views/1?pane=issue&itemId=27498718\
+  //Add handling tombstone tweet
 
   const mediaUrls = Array.from(new Set([...tweetsDataUrlsToUpload]));
 
