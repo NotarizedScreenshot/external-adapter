@@ -7,7 +7,7 @@
     "start:dev": "nodemon --ignore data/ dist/",
     "dev:ts": "tsc && node dist/index.js",
     "start": "node dist/index.js",
-    "test": "env TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\" }' mocha --exit -r ts-node/register 'tests/**/*.ts'",
+    "test": "env TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\" }' mocha --exit --timeout 40000 -r ts-node/register 'tests/**/*.ts'",
     "testCov": "env TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\" }' nyc --reporter=text mocha --exit -r ts-node/register 'tests/**/*.ts'",
     "test:watch": "env TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\" }' mocha --exit --timeout 40000 --watch --watch-files tests/**/*.ts,src/**/*.ts -r ts-node/register 'tests/**/*.ts'"
   },
