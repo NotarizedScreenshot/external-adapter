@@ -85,4 +85,4 @@ jobs:
           name: id_rsa
           known_hosts: ${{ secrets.KNOWN_HOSTS }}
       - name: Restart Adapter container
-        run: ssh ${{ secrets.USER }}@${{ secrets.HOST }} "/home/quantum-oracle/reload_adapter.sh ${{ steps.meta.outputs.tags }}"
+        run: ssh ${{ secrets.USER }}@${{ secrets.HOST }} "/home/quantum-oracle/reload_adapter.sh ${{ steps.meta.outputs.version }}"
