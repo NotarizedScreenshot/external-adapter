@@ -46,7 +46,7 @@ jobs:
           name: qo-adapter-dist-${{ github.run_id }}
           path: ./dist
   docker:
-    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
+    if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
       -
@@ -91,4 +91,4 @@ jobs:
           name: id_rsa
           known_hosts: ${{ secrets.KNOWN_HOSTS }}
       - name: Restart Adapter container
-        run: ssh ${{ secrets.USER }}@${{ secrets.HOST }} "/home/quantum-oracle/reload_adapter.sh
+        run: ssh ${{ secrets.USER }}@${{ secrets.HOST }} "/home/quantum-oracle/reload_adapter.sh ${{ steps.meta.outputs.tags }}"
