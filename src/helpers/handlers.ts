@@ -168,7 +168,7 @@ const getScreenshotWithPuppeteer = async (
     const screenshotImageUrl = fetchedData.imageUrl;
     const screenshotImageBuffer = makeBufferFromBase64ImageUrl(screenshotImageUrl!);
     const stampedImageBuffer = await makeStampedImage(screenshotImageUrl!, fetchedData.metadata!);
-    const stampedImageUrl = makeImageBase64UrlfromBuffer(stampedImageBuffer!);
+    // const stampedImageUrl = makeImageBase64UrlfromBuffer(stampedImageBuffer!);
     const responseData: IGetScreenshotResponseData = { ...fetchedData };
 
     const tweetEntry: ITweetTimelineEntry = getTweetTimelineEntries(responseData.tweetdata!).find(
@@ -181,15 +181,15 @@ const getScreenshotWithPuppeteer = async (
 
     const mediaUrls = Array.from(new Set([...tweetsDataUrlsToUpload]));
 
-    const uploadJob = await uploadQueue.add({
-      tweetId,
-      userId,
-      metadata: fetchedData.metadata,
-      tweetdata: fetchedData.tweetdata,
-      screenshotImageBuffer,
-      stampedImageBuffer,
-      mediaUrls,
-    });
+    // const uploadJob = await uploadQueue.add({
+    //   tweetId,
+    //   userId,
+    //   metadata: fetchedData.metadata,
+    //   tweetdata: fetchedData.tweetdata,
+    //   screenshotImageBuffer,
+    //   stampedImageBuffer,
+    //   mediaUrls,
+    // });
 
     browser.close();
 

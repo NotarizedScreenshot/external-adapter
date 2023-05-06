@@ -26,10 +26,12 @@ uploadQueue.process(async (job) => {
   const client = new NFTStorage({ token: process.env.NFT_STORAGE_TOKEN! });
 
   const screenshotCid = await uploadToCAS(Buffer.from(screenshotImageBuffer!), client);
-  job.progress(10);
+  job.progress(20);
 
   const stampedScreenShotCid = await uploadToCAS(Buffer.from(stampedImageBuffer!), client);
-  job.progress(20);
+  job.progress(40);
+
+  let currentProgress: number = 40;
 
   const mediaCidMap = await Promise.all<{ url: string; cid: string | null; error?: string }>(
     mediaUrls.map(async (url: string, index: number, array: any[]) => {
@@ -38,8 +40,16 @@ uploadQueue.process(async (job) => {
           responseType: 'arraybuffer',
         });
         const buffer = response.data;
+        const x = Math.floor(30 / array.length);
+        currentProgress += Math.floor(x * 0.25);
+        job.progress(currentProgress);
+
+        console.log('media in progress', url);
 
         const cid = (await uploadToCAS(buffer, client)) as string;
+
+        currentProgress += Math.floor(x * 0.75);
+        job.progress(currentProgress);
 
         return { url, cid };
       } catch (error: any) {
@@ -48,6 +58,7 @@ uploadQueue.process(async (job) => {
       }
     }),
   );
+  // const mediaCidMap: any[] = [];
   job.progress(70);
 
   const metadataToSave = {
