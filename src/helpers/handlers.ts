@@ -107,11 +107,17 @@ const getScreenshotWithPuppeteer = async (
 
   const tweetUrl = makeTweetUrlWithId(tweetId);
 
+  console.log('tweetUrl: ', tweetUrl);
+
   const browser = await puppeteer.launch({
     args: puppeteerDefaultConfig.launch.args,
   });
 
+  console.log('browser', browser);
+
   const page = await browser.newPage();
+
+  console.log('page', page);
 
   await page.setViewport({
     ...puppeteerDefaultConfig.viewport,
