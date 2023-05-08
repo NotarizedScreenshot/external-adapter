@@ -116,9 +116,9 @@ const getScreenshotWithPuppeteer = async (
     const browser = await puppeteer.launch({
       args: [
         ...puppeteerDefaultConfig.launch.args,
-        '--disable-web-security',
-        '--disable-features=IsolateOrigins',
-        '--disable-site-isolation-trials',
+        // '--disable-web-security',
+        // '--disable-features=IsolateOrigins',
+        // '--disable-site-isolation-trials',
       ],
     });
 
