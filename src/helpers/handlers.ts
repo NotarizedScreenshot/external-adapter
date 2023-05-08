@@ -28,7 +28,6 @@ import puppeteer from 'puppeteer';
 import { makeBufferFromBase64ImageUrl, makeStampedImage } from './images';
 import { createTweetData } from '../models';
 import { uploadQueue } from '../queue';
-import { constants } from 'buffer';
 
 export const getMetaDataPromise = (page: Page, tweetId: string) =>
   new Promise<string>((resolve, reject) => {
@@ -97,10 +96,10 @@ const getScreenshotWithPuppeteer = async (
     const activeJob = jobs.find((job) => job.data.userId === userId);
     if (!!activeJob) {
       const data = activeJob.data;
-      const { stampedImageBuffer, metadata, tweetdata } = data;
+      const { stampedImageBuffer, metadata, tweetdata, screenshotImageBuffer } = data;
 
       const responseData: IGetScreenshotResponseData = {
-        imageUrl: makeImageBase64UrlfromBuffer(Buffer.from(stampedImageBuffer!)),
+        imageUrl: makeImageBase64UrlfromBuffer(Buffer.from(screenshotImageBuffer!)),
         metadata,
         tweetdata,
       };
@@ -181,15 +180,15 @@ const getScreenshotWithPuppeteer = async (
 
     const mediaUrls = Array.from(new Set([...tweetsDataUrlsToUpload]));
 
-    // const uploadJob = await uploadQueue.add({
-    //   tweetId,
-    //   userId,
-    //   metadata: fetchedData.metadata,
-    //   tweetdata: fetchedData.tweetdata,
-    //   screenshotImageBuffer,
-    //   stampedImageBuffer,
-    //   mediaUrls,
-    // });
+    const uploadJob = await uploadQueue.add({
+      tweetId,
+      userId,
+      metadata: fetchedData.metadata,
+      tweetdata: fetchedData.tweetdata,
+      screenshotImageBuffer,
+      stampedImageBuffer,
+      mediaUrls,
+    });
 
     browser.close();
 
