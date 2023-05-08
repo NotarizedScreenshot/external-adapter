@@ -67,7 +67,7 @@ export const getTweetDataPromise = (page: Page, tweetId: string) =>
           const responseData = await puppeteerResponse.text();
           resolve(responseData);
         } catch (error: any) {
-          console.log('error:', error);
+          console.log('getTweetDataPromise error:', error.message);
         }
       }
       setTimeout(() => reject(`failed to get tweet ${tweetId} tweet data`), DEFAULT_TIMEOUT_MS);
