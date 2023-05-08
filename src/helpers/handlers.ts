@@ -58,10 +58,9 @@ export const getTweetDataPromise = (page: Page, tweetId: string) =>
       const headers = puppeteerResponse.headers();
 
       if (
-        responseUrl.match(/TweetDetail/g)
-        // &&
-        // headers['content-type'] &&
-        // headers['content-type'].includes('application/json')
+        responseUrl.match(/TweetDetail/g) &&
+        headers['content-type'] &&
+        headers['content-type'].includes('application/json')
       ) {
         try {
           const responseData = await puppeteerResponse.text();
@@ -118,12 +117,7 @@ const getScreenshotWithPuppeteer = async (
     const tweetUrl = makeTweetUrlWithId(tweetId);
 
     const browser = await puppeteer.launch({
-      args: [
-        ...puppeteerDefaultConfig.launch.args,
-        // '--disable-web-security',
-        // '--disable-features=IsolateOrigins',
-        // '--disable-site-isolation-trials',
-      ],
+      args: puppeteerDefaultConfig.launch.args,
     });
 
     const page = await browser.newPage();
