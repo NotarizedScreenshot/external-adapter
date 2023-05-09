@@ -7,7 +7,7 @@ export const puppeteerDefaultConfig: {
   page: { goto: { gotoWaitUntilIdle: { waitUntil: 'networkidle0' } } };
 } = {
   launch: {
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-web-security'],
   },
   viewport: {
     width: 1024,

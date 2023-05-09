@@ -56,9 +56,19 @@ export const getTweetDataPromise = (page: Page, tweetId: string) =>
     page.on('response', async (puppeteerResponse: HTTPResponse) => {
       const responseUrl = puppeteerResponse.url();
 
-      if (responseUrl.match(/TweetDetail/g)) {
-        const responseData = await puppeteerResponse.text();
-        resolve(responseData);
+      const headers = puppeteerResponse.headers();
+
+      if (
+        responseUrl.match(/TweetDetail/g) &&
+        headers['content-type'] &&
+        headers['content-type'].includes('application/json')
+      ) {
+        try {
+          const responseData = await puppeteerResponse.text();
+          resolve(responseData);
+        } catch (error: any) {
+          console.log('getTweetDataPromise error:', error.message);
+        }
       }
       setTimeout(() => reject(`failed to get tweet ${tweetId} tweet data`), DEFAULT_TIMEOUT_MS);
     });
