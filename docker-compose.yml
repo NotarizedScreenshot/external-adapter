@@ -18,3 +18,11 @@ services:
         delay: 5s
         max_attempts: 3
         window: 120s
+  chrome:
+    image: "browserless/chrome:latest"
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+        window: 120s

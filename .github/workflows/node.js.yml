@@ -20,6 +20,8 @@ jobs:
     services:
       redis:
         image: redis
+      chrome:
+        image: browserless/chrome
 
     strategy:
       matrix:
@@ -27,6 +29,7 @@ jobs:
 
     env:
       REDIS_HOST: redis
+      CHROME_HOST: chrome
 
     steps:
       - uses: actions/checkout@v3
