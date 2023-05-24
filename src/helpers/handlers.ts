@@ -123,9 +123,8 @@ const getScreenshotWithPuppeteer = async (
   //   args: puppeteerDefaultConfig.launch.args,
   // });
 
-  const chromeHost = process.env.CHROME_HOST
-  const browser = await puppeteer.connect({ browserWSEndpoint: `ws://${chromeHost}:3000` })
-
+  const chromeHost = process.env.CHROME_HOST;
+  const browser = await puppeteer.connect({ browserWSEndpoint: `ws://${chromeHost}:3000` });
 
   console.log('browser', browser);
 
