@@ -49,6 +49,7 @@ jobs:
           name: qo-adapter-dist-${{ github.run_id }}
           path: ./dist
   docker:
+    needs: build
     if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
