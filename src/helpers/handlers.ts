@@ -119,9 +119,12 @@ const getScreenshotWithPuppeteer = async (
 
   console.log('tweetUrl: ', tweetUrl);
 
-  const browser = await puppeteer.launch({
-    args: puppeteerDefaultConfig.launch.args,
-  });
+  // const browser = await puppeteer.launch({
+  //   args: puppeteerDefaultConfig.launch.args,
+  // });
+
+  const chromeHost = process.env.CHROME_HOST;
+  const browser = await puppeteer.connect({ browserWSEndpoint: `ws://${chromeHost}:3000` });
 
   console.log('browser', browser);
 

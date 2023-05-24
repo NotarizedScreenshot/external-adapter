@@ -1,11 +1,8 @@
-FROM node:18-bullseye
+FROM node:18-bullseye-slim
 
 WORKDIR /app
-RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
-&& sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' \
-&& apt update \
-&& apt upgrade -y \
-&& apt install -y dnsutils lsb-release google-chrome-stable fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-kacst fonts-freefont-ttf libxss1 --no-install-recommends \
+RUN apt update \
+&& apt install -y dnsutils --no-install-recommends \
 && rm -rf /var/lib/apt/lists/*
 
 COPY . .
@@ -24,6 +21,7 @@ RUN useradd -u ${uid} -g ${group} -s /bin/sh -m ${user}
 
 RUN chown ${user} /app
 ENV REDIS_HOST=redis
+ENV CHROME_HOST=chrome
 USER ${uid}:${gid}
 
 CMD ["npm", "start"]
