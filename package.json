@@ -12,18 +12,15 @@
     "test:watch": "env TS_NODE_COMPILER_OPTIONS='{\"module\": \"commonjs\" }' mocha --exit --timeout 40000 --watch --watch-files tests/**/*.ts,src/**/*.ts -r ts-node/register 'tests/**/*.ts'"
   },
   "dependencies": {
-    "axios": "^0.27.2",
+    "axios": "1.4.0",
     "bull": "^4.10.4",
-    "canvas": "^2.11.0",
+    "canvas": "2.11.2",
     "crypto-js": "^4.1.1",
     "dotenv": "^16.0.3",
     "express": "^4.18.1",
-    "images": "^3.2.4",
-    "json-bigint": "^1.0.0",
     "morgan": "^1.10.0",
-    "multiformats": "^9.9.0",
-    "nft.storage": "^6.4.0",
-    "puppeteer": "^19.5.2",
+    "nft.storage": "7.1.0",
+    "puppeteer": "^20.4.0",
     "socket.io": "^4.6.1",
     "uuid": "^9.0.0"
   },
@@ -33,15 +30,14 @@
     "@types/express": "^4.17.16",
     "@types/mocha": "^10.0.1",
     "@types/morgan": "^1.9.4",
-    "@types/node": "^18.11.18",
+    "@types/node": "20.2.3",
     "@types/svg-render": "^1.2.0",
     "@types/uuid": "^9.0.1",
     "chai": "^4.3.7",
     "chai-http": "^4.3.0",
-    "cross-env": "^6.0.3",
     "mocha": "^10.2.0",
     "nyc": "^15.1.0",
     "ts-node": "^10.9.1",
-    "typescript": "^4.9.5"
+    "typescript": "^5.0.4"
   }
 }
