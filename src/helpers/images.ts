@@ -3,37 +3,37 @@ import { createCanvas, loadImage } from 'canvas';
 
 import { processPWD } from '../prestart';
 import {
-  META_STAMP_CANVAS_DEFAULT_HEIGHT,
-  META_STAMP_CANVAS_DEFAULT_WIDTH,
   META_STAMP_COLOR,
   META_STAMP_FONT,
+  WATERMARK_DEFAULT_HEIGHT,
+  WATERMARK_DEFAULT_WIDTH,
   WATERMARK_IMAGE_PATH,
 } from '../config';
 
 export const makeStampedImage = async (srcImgPath: string | Buffer) => {
   try {
-    const canvas = createCanvas(META_STAMP_CANVAS_DEFAULT_WIDTH, META_STAMP_CANVAS_DEFAULT_HEIGHT);
+    const screenshotImage = await loadImage(srcImgPath);
+
+    const canvas = createCanvas(screenshotImage.width, screenshotImage.height);
     const ctx = canvas.getContext('2d');
     ctx.font = META_STAMP_FONT;
     ctx.fillStyle = META_STAMP_COLOR;
-    const screenshotImage = await loadImage(srcImgPath);
+
     const watermarkImage = await loadImage(
       path.resolve(processPWD, 'public', WATERMARK_IMAGE_PATH),
     );
 
     ctx.drawImage(
-      screenshotImage,
-      0,
-      0,
-      META_STAMP_CANVAS_DEFAULT_WIDTH,
-      META_STAMP_CANVAS_DEFAULT_HEIGHT,
+        screenshotImage,
+        0,
+        0
     );
     ctx.drawImage(
-      watermarkImage,
-      0,
-      0,
-      META_STAMP_CANVAS_DEFAULT_WIDTH,
-      META_STAMP_CANVAS_DEFAULT_HEIGHT,
+        watermarkImage,
+        screenshotImage.width - WATERMARK_DEFAULT_WIDTH,
+        0,
+        WATERMARK_DEFAULT_WIDTH,
+        WATERMARK_DEFAULT_HEIGHT,
     );
 
     return canvas.toBuffer('image/png');
