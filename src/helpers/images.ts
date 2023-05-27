@@ -1,7 +1,6 @@
 import path from 'path';
 import { createCanvas, loadImage } from 'canvas';
 
-import { IMetadata } from 'types';
 import { processPWD } from '../prestart';
 import {
   META_STAMP_CANVAS_DEFAULT_HEIGHT,
@@ -11,20 +10,16 @@ import {
   WATERMARK_IMAGE_PATH,
 } from '../config';
 
-export const makeStampedImage = async (srcImgPath: string | Buffer, metaDataString: string) => {
+export const makeStampedImage = async (srcImgPath: string | Buffer) => {
   try {
     const canvas = createCanvas(META_STAMP_CANVAS_DEFAULT_WIDTH, META_STAMP_CANVAS_DEFAULT_HEIGHT);
     const ctx = canvas.getContext('2d');
     ctx.font = META_STAMP_FONT;
     ctx.fillStyle = META_STAMP_COLOR;
-    const ctxFillTextX = 10;
-    const ctxFillTextY = 20;
-
     const screenshotImage = await loadImage(srcImgPath);
     const watermarkImage = await loadImage(
       path.resolve(processPWD, 'public', WATERMARK_IMAGE_PATH),
     );
-    const metadata = JSON.parse(metaDataString) as IMetadata;
 
     ctx.drawImage(
       screenshotImage,
