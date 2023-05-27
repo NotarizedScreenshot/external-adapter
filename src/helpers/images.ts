@@ -1,6 +1,5 @@
 import path from 'path';
 import { createCanvas, loadImage } from 'canvas';
-import { getStampMetaString } from '../helpers';
 
 import { IMetadata } from 'types';
 import { processPWD } from '../prestart';
@@ -41,11 +40,8 @@ export const makeStampedImage = async (srcImgPath: string | Buffer, metaDataStri
       META_STAMP_CANVAS_DEFAULT_WIDTH,
       META_STAMP_CANVAS_DEFAULT_HEIGHT,
     );
-    ctx.fillText(getStampMetaString(metadata), ctxFillTextX, ctxFillTextY);
 
-    const canvasBuffer = canvas.toBuffer('image/png');
-
-    return canvasBuffer;
+    return canvas.toBuffer('image/png');
   } catch (error: any) {
     console.log('makeStampedImage error: ', error.message);
     return null;

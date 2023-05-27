@@ -1,6 +1,6 @@
 export const DEFAULT_TIMEOUT_MS = 30000;
 export const IPFS_GATEWAY_BASE_URL = 'https://ipfs.io/ipfs';
-export const WATERMARK_IMAGE_PATH = 'images/stamp_t.png';
+export const WATERMARK_IMAGE_PATH = 'images/stamp.svg';
 export const META_STAMP_FONT = '10px monospace';
 export const META_STAMP_COLOR = 'red';
 export const META_STAMP_CANVAS_DEFAULT_WIDTH = 900;

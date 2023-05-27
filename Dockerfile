@@ -2,7 +2,7 @@ FROM node:18-alpine AS builder
 
 WORKDIR /app
 
-RUN apk add --update build-base pkgconfig python3 cairo-dev pango-dev pixman-dev
+RUN apk add --update build-base pkgconfig python3 cairo-dev librsvg-dev pango-dev pixman-dev
 
 COPY . .
 
@@ -18,7 +18,7 @@ RUN tsc
 FROM node:18-alpine
 WORKDIR /app
 
-RUN apk add --update --no-cache bind-tools cairo pango
+RUN apk add --update --no-cache bind-tools cairo librsvg pango
 
 ARG user=quantumoracle
 ARG group=quantumoracle
