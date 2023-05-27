@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     # Containers must run in Linux based operating systems
     container:
-      image: chainhackers/quantumoracle-adapter:latest
+      image: node:18-alpine
       options: --user root
     services:
       redis:
@@ -32,13 +32,14 @@ jobs:
       CHROME_HOST: chrome
 
     steps:
+      - run: apk add --update build-base pkgconfig python3 cairo-dev librsvg-dev pango-dev pixman-dev
       - uses: actions/checkout@v3
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'yarn'
-      - run: yarn install
+      - run: yarn install --frozen-lockfile
       - run: yarn global add typescript
       - run: tsc
       - run: yarn test
