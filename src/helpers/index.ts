@@ -95,19 +95,6 @@ export const metadataToAttirbutes = (metadata: IMetadata): TMetadataAttributes =
   return attributes;
 };
 
-export const getStampMetaString = (metadata: IMetadata) => {
-  const { headers, ip, url, dns } = metadata;
-  const data = [`url: ${url}`, `ip: ${ip}`];
-
-  for (const key of Object.keys(headers)) {
-    data.push(`${key}: ${headers[key]}`);
-  }
-
-  const hostIndex = getIncludeSubstringElementIndex(dns.data, dns.host, 2);
-  data.push(dns.data.slice(!!hostIndex ? hostIndex : 0).join('\n'));
-  return data.join('\n');
-};
-
 export const urlToLodashedString = (url: string) => url.split(/[,.:\/]+/).join('_');
 
 export const pngPathFromUrl = (url: string): string => {
