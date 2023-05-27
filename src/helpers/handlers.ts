@@ -1,26 +1,19 @@
 import {
   getDnsInfo,
-  getHostWithoutWWW,
   getMediaUrlsToUpload,
   getTweetTimelineEntries,
   isValidUint64,
   makeImageBase64UrlfromBuffer,
   makeTweetUrlWithId,
-  pngPathFromTweetId,
   trimUrl,
-  tweetDataPathFromTweetId,
 } from '../helpers';
-import { HTTPResponse, Page } from 'puppeteer';
+import {Browser, HTTPResponse, Page} from 'puppeteer';
 import {
   IGetScreenshotResponseData,
   IMetadata,
-  IScreenShotBuffersToUpload,
   ITweetTimelineEntry,
 } from '../types';
 import { DEFAULT_TIMEOUT_MS, screenshotResponseDataOrderedKeys } from '../config';
-import fs from 'fs/promises';
-import path from 'path';
-import { processPWD } from '../prestart';
 import { Request, Response } from 'express';
 import { reportError } from '../helpers';
 import { puppeteerDefaultConfig } from '../config';
@@ -103,8 +96,7 @@ const getScreenshotWithPuppeteer = async (
     return reportError('invalid tweeetId', response);
   }
   if (!!activeJob) {
-    const data = activeJob.data;
-    const { stampedImageBuffer, metadata, tweetdata } = data;
+    const { stampedImageBuffer, metadata, tweetdata } = activeJob.data;
 
     const responseData: IGetScreenshotResponseData = {
       imageUrl: makeImageBase64UrlfromBuffer(Buffer.from(stampedImageBuffer!)),
@@ -119,14 +111,7 @@ const getScreenshotWithPuppeteer = async (
 
   console.log('tweetUrl: ', tweetUrl);
 
-  // const browser = await puppeteer.launch({
-  //   args: puppeteerDefaultConfig.launch.args,
-  // });
-
-  const chromeHost = process.env.CHROME_HOST;
-  const browser = await puppeteer.connect({ browserWSEndpoint: `ws://${chromeHost}:3000` });
-
-  console.log('browser', browser);
+  const browser = await getBrowser();
 
   const page = await browser.newPage();
 
@@ -138,7 +123,7 @@ const getScreenshotWithPuppeteer = async (
   });
   await page.setUserAgent(puppeteerDefaultConfig.userAgent);
 
-  const screenShotPromise = page
+  const screenShotPromise: Promise<string> = page
     .goto(tweetUrl, puppeteerDefaultConfig.page.goto.gotoWaitUntilIdle)
     .then(async () => {
       const articleElement = (await page.waitForSelector('article'))!;
@@ -148,19 +133,16 @@ const getScreenshotWithPuppeteer = async (
         clip: { ...boundingBox },
       });
 
-      // console.log(screenshotImageBuffer);
-
       return makeImageBase64UrlfromBuffer(screenshotImageBuffer);
     });
 
-  const fetchedData = (
-    await Promise.allSettled<string>([
-      getTweetDataPromise(page, tweetId),
-
-      getMetaDataPromise(page, tweetId),
-      screenShotPromise,
-    ])
-  ).reduce<IGetScreenshotResponseData>(
+  const promises: Iterable<Promise<string>> = [
+    getTweetDataPromise(page, tweetId),
+    getMetaDataPromise(page, tweetId),
+    screenShotPromise,
+  ];
+  const allData = await Promise.allSettled<string>(promises);
+  const fetchedData = allData.reduce<IGetScreenshotResponseData>(
     (acc, val, index) => {
       acc[screenshotResponseDataOrderedKeys[index]] = val.status === 'fulfilled' ? val.value : null;
       return acc;
@@ -205,3 +187,10 @@ const getScreenshotWithPuppeteer = async (
   response.set('Content-Type', 'application/json');
   return response.status(200).send({ ...responseData });
 };
+
+async function getBrowser(): Promise<Browser> {
+  const chromeHost = process.env.CHROME_HOST;
+  const browser = await puppeteer.connect({browserWSEndpoint: `ws://${chromeHost}:3000`});
+  console.log('browser', browser);
+  return browser;
+}
