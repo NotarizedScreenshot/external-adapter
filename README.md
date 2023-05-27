@@ -1,7 +1,13 @@
 # external-adapter
 External adapter for chainlink node aka backend
 
-### Development
+## Development
+
+### Deploy via Github Actions
+```shell
+git tag v0.1.5
+git push origin v0.1.5
+```
 
 run in Docker:
 ```shell
