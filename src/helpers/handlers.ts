@@ -182,7 +182,7 @@ const getScreenshotWithPuppeteer = async (
     mediaUrls,
   });
 
-  browser.close();
+  await browser.close();
 
   response.set('Content-Type', 'application/json');
   return response.status(200).send({ ...responseData });
