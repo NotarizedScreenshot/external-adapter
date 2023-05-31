@@ -26,23 +26,18 @@ import { NFTStorage } from 'nft.storage';
 
 export const adapterResponse = async (request: Request, response: Response) => {
   try {
-    const requestUrl = request.body.data.url;
-    const tweetId = request.body.data.url as string;
+    const tweetId = request.body.data.tweetId as string;
+
     const metadataCidPath = path.resolve(processPWD, 'data', metadataCidPathFromTweetId(tweetId));
     const metadataCid = JSON.parse(await fs.readFile(metadataCidPath, 'utf-8'))[tweetId];
 
-    const trimmedUrl = trimUrl(requestUrl);
-
     const metadataResponse = await axios.get(`${IPFS_GATEWAY_BASE_URL}${metadataCid}`);
     const metadata = metadataResponse.data;
-    const screenshotPath = path.resolve(processPWD, 'data', pngPathFromUrl(trimmedUrl));
 
-    const screenshotBuffer = await fs.readFile(screenshotPath);
-
-    const trustedSha256sum = getTrustedHashSum(screenshotBuffer);
+    const trustedSha256sum = getTrustedHashSum(String(metadata));
 
     const client = new NFTStorage({ token: process.env.NFT_STORAGE_TOKEN! });
-    const screenshotCid = await uploadToCAS(screenshotBuffer, client);
+    const screenshotCid = metadata.stampedScreenShotCid;
 
     const name = 'Notarized Screenshot 0x' + trustedSha256sum;
     const image = 'ipfs://' + screenshotCid;
@@ -52,8 +47,8 @@ export const adapterResponse = async (request: Request, response: Response) => {
     //TODO: to be revised as a template string
     const description =
       name +
-      ' by QuantumOracle, result of verifying the image served at URL \n' +
-      requestUrl +
+      ' by QuantumOracle, result of verifying the tweet with id \n' +
+      tweetId +
       ' at ts ' +
       time +
       '\n' +
@@ -66,7 +61,7 @@ export const adapterResponse = async (request: Request, response: Response) => {
         description,
         ts,
         time,
-        url: requestUrl,
+        tweetId,
         attributes: metadataToAttirbutes(JSON.parse(metadata.metadata)),
       }),
       client,
@@ -74,10 +69,7 @@ export const adapterResponse = async (request: Request, response: Response) => {
 
     const data = {
       data: {
-        url: requestUrl,
-        sha256sum: trustedSha256sum,
         cid: screenshotCid,
-        metadataCid: nftMetadataCid,
       },
     };
     response.status(200).json(data);
@@ -86,6 +78,7 @@ export const adapterResponse = async (request: Request, response: Response) => {
       response.status(422).json({ error: error.message });
       return;
     }
+    console.log(error);
     return response.status(502).json({ error: error.message });
   }
 };
