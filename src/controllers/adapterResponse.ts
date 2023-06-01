@@ -26,11 +26,17 @@ import { NFTStorage } from 'nft.storage';
 
 export const adapterResponse = async (request: Request, response: Response) => {
   try {
+    console.log('adapter response POST, url:', request.url);
+    console.log('request body: ', request.body);
     const tweetId = request.body.data.tweetId as string;
+    console.log('tweet id: ', tweetId);
 
     const metadataCidPath = path.resolve(processPWD, 'data', metadataCidPathFromTweetId(tweetId));
+    console.log('metadataCidPath:', metadataCidPath);
     const metadataCid = JSON.parse(await fs.readFile(metadataCidPath, 'utf-8'))[tweetId];
+    console.log('metadataCid', metadataCid);
 
+    console.log('metadata url:', `${IPFS_GATEWAY_BASE_URL}${metadataCid}`);
     const metadataResponse = await axios.get(`${IPFS_GATEWAY_BASE_URL}${metadataCid}`);
     const metadata = metadataResponse.data;
 
@@ -69,9 +75,11 @@ export const adapterResponse = async (request: Request, response: Response) => {
 
     const data = {
       data: {
-        cid: screenshotCid,
+        cid: nftMetadataCid,
       },
     };
+
+    console.log('response data: ', data);
     response.status(200).json(data);
   } catch (error: any) {
     if (error.message.includes('ENOENT')) {
