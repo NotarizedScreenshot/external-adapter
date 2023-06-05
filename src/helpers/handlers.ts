@@ -123,6 +123,12 @@ const getScreenshotWithPuppeteer = async (
     const screenShotPromise: Promise<string> = page
       .goto(tweetUrl, puppeteerDefaultConfig.page.goto.gotoWaitUntilIdle)
       .then(async () => {
+        await page.evaluate(() => {
+          const bottomBar = document.querySelector('[data-testid="BottomBar"]') as HTMLElement;
+          if (bottomBar) {
+            bottomBar.style.display = 'none';
+          }
+        });
         const articleElement = (await page.waitForSelector('article'))!;
         const boundingBox = (await articleElement.boundingBox())!;
 
