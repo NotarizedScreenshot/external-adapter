@@ -1,3 +1,4 @@
+import { makeTweetUrlWithId, randomInt } from '../helpers';
 import { ITweetBody, ITweetData, ITweetDetails, ITweetResults, ITweetUser } from 'types';
 
 export const createTweetData = (tweetResults: ITweetResults): ITweetData | null => {
@@ -124,4 +125,19 @@ export const createTweetData = (tweetResults: ITweetResults): ITweetData | null 
     console.log('createTweetData error', error);
     return null;
   }
+};
+
+export const createDescription = (tweetId: string, timestamp: number) => {
+  const templates = [
+    ['Notarized Capture: Tweet ID', ' at', 'Authenticated internet history. QuantumOracle'],
+    ['Notarized Screenshot: ID', ', Timestamp', 'Authenticated internet history. QuantumOracle'],
+    ['Notarized Capture: Tweet ID', ', Timestamp', 'Authenticated internet history. QuantumOracle'],
+    ['Certified Moment: ID', ', Timestamp', 'Captured reality, forever preserved. QuantumOracle'],
+    ['Verified Snapshot: ID', ', Timestamp', 'An irrefutable glimpse into history. QuantumOracle'],
+    ['Authentic Capture: ID', ', Timestamp', 'A testament to verified discovery. QuantumOracle'],
+  ];
+  const index = randomInt(0, templates.length - 1);
+  return `${templates[index][0]} ${tweetId}${templates[index][1]} ${timestamp}. ${
+    templates[index][2]
+  }.&#13;&#10;Original tweet: ${makeTweetUrlWithId(tweetId)}`;
 };

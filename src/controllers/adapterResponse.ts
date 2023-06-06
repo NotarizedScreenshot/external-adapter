@@ -13,6 +13,7 @@ import axios from 'axios';
 import { uploadToCAS } from '../helpers/nftStorage';
 import { IPFS_GATEWAY_BASE_URL } from '../config';
 import { NFTStorage } from 'nft.storage';
+import { createDescription } from '../models';
 
 /**
  * Recieves http request from chainlink node
@@ -37,6 +38,7 @@ export const adapterResponse = async (request: Request, response: Response) => {
     console.log('metadataCid', metadataCid);
 
     console.log('metadata url:', `${IPFS_GATEWAY_BASE_URL}${metadataCid}`);
+
     const metadataResponse = await axios.get(`${IPFS_GATEWAY_BASE_URL}${metadataCid}`);
     const metadata = metadataResponse.data;
 
@@ -50,15 +52,7 @@ export const adapterResponse = async (request: Request, response: Response) => {
     const ts = Date.now();
     const time = new Date(ts).toUTCString();
 
-    //TODO: to be revised as a template string
-    const description =
-      name +
-      ' by QuantumOracle, result of verifying the tweet with id \n' +
-      tweetId +
-      ' at ts ' +
-      time +
-      '\n' +
-      ' Check metadata fields for more details.';
+    const description = createDescription(tweetId, Date.now());
 
     const nftMetadataCid = await uploadToCAS(
       JSON.stringify({
