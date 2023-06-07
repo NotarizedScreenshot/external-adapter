@@ -1,5 +1,5 @@
-# external-adapter
-External adapter for chainlink node aka backend
+# QuantrumOracle external adapter
+External adapter for Chainlink nodes providing NTF metadata to mint with QuantumOracle, aka backend
 
 ## Development
 
@@ -28,15 +28,16 @@ curl 'http://localhost:9000/previewData?tweetId=1639773626709712896&userId=8gZ5N
 ```
 
 
+### Compile Typescript and run the server:
+```shell
+yarn install
+yarn dev:ts
+```  
+http://localhost:9000/
 
-### To compile ts and run the server:
-```
-npm install
-npm run dev:ts
-```
 
 ### Browser access:
-Link: http://localhost:9000/
+Link: 
 
 Put link into input field and press submit:
 
