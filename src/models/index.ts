@@ -1,5 +1,5 @@
 import { makeTweetUrlWithId, randomInt } from '../helpers';
-import { ITweetBody, ITweetData, ITweetDetails, ITweetResults, ITweetUser } from 'types';
+import { IMoment, ITweetBody, ITweetData, ITweetDetails, ITweetResults, ITweetUser } from 'types';
 
 export const createTweetData = (tweetResults: ITweetResults): ITweetData | null => {
   //TODO: Issue 52: https://github.com/orgs/NotarizedScreenshot/projects/1/views/1?pane=issue&itemId=27498718\
@@ -127,17 +127,106 @@ export const createTweetData = (tweetResults: ITweetResults): ITweetData | null 
   }
 };
 
-export const createDescription = (tweetId: string, timestamp: number) => {
+export const createMoment = (timestamp: number): IMoment => {
+  const date = new Date(timestamp);
+  const dateSplitted = date.toUTCString().split(' ');
+  const time = `${dateSplitted[4]} ${dateSplitted[5]}`;
+  const day = `${dateSplitted[2]} ${dateSplitted[1]}, ${dateSplitted[3]}`;
+
+  return { time, day };
+};
+
+export const createNftName = (tweetId: string, moment: IMoment) => {
   const templates = [
-    ['Notarized Capture: Tweet ID', ' at', 'Authenticated internet history. QuantumOracle'],
-    ['Notarized Screenshot: ID', ', Timestamp', 'Authenticated internet history. QuantumOracle'],
-    ['Notarized Capture: Tweet ID', ', Timestamp', 'Authenticated internet history. QuantumOracle'],
-    ['Certified Moment: ID', ', Timestamp', 'Captured reality, forever preserved. QuantumOracle'],
-    ['Verified Snapshot: ID', ', Timestamp', 'An irrefutable glimpse into history. QuantumOracle'],
-    ['Authentic Capture: ID', ', Timestamp', 'A testament to verified discovery. QuantumOracle'],
+    ['Notarized Capture: tweet ID', 'at', 'on', 'Authenticated internet history. QuantumOracle'],
+    ['Notarized Screenshot: ID', 'at', 'on', 'Authenticated internet history. QuantumOracle'],
+    ['Notarized Capture: tweet ID', 'at', 'on', 'Authenticated internet history. QuantumOracle'],
+    ['Certified Moment: ID', 'at', 'on', 'Captured reality, forever preserved. QuantumOracle'],
+    ['Verified Snapshot: ID', 'at', 'on', 'An irrefutable glimpse into history. QuantumOracle'],
+    ['Authentic Capture: ID', 'at', 'on', 'A testament to verified discovery. QuantumOracle'],
   ];
   const index = randomInt(0, templates.length - 1);
-  return `${templates[index][0]} ${tweetId}${templates[index][1]} ${timestamp}. ${
+
+  return `${templates[index][0]} ${tweetId} ${templates[index][1]} ${moment.time} ${
     templates[index][2]
-  }.&#13;&#10;Original tweet: ${makeTweetUrlWithId(tweetId)}`;
+  } ${moment.day}. ${templates[index][3]}. Original tweet: ${makeTweetUrlWithId(tweetId)}`;
+};
+export const createNftDescription = (tweetId: string, author: string, moment: IMoment) => {
+  const templates = [
+    [
+      'Unveil verified truth with this Notarized Snapshot. Witness the tweet by',
+      'captured at',
+      'on',
+      'Embrace authenticated internet history. See the original tweet at:',
+      "Explore it while it's still accessible!",
+    ],
+    [
+      'Step into a certified moment of authenticity with this Verified Snapshot. Explore the tweet by',
+      'captured at',
+      'on',
+      'Unveil the truth. Check the original tweet:',
+      "Dive into it before it's gone!",
+    ],
+    [
+      'Journey through time with this Certified Moment, capturing the tweet by',
+      'at',
+      'on',
+      'Embrace an irrefutable glimpse into history. Find the original tweet at:',
+      "Explore it now, while it's still accessible!",
+    ],
+    [
+      'Embark on an exploration of verified discovery with this Authentic Capture. Immerse yourself in the tweet by',
+      'captured at',
+      'on',
+      'A testament to the power of QuantumOracle. Discover the original tweet:',
+      'Explore it before it disappears!',
+    ],
+    [
+      'Indulge in the authenticity of this Notarized Snapshot, capturing the tweet by',
+      'at',
+      'on',
+      'Preserving verified truth in internet history. Find the original tweet:',
+      "Explore it while it's still accessible!",
+    ],
+    [
+      'Witness a frozen moment in time with this Verified Snapshot. Delve into the tweet by',
+      'captured at',
+      'on',
+      'QuantumOracle unveils the truth. View the original tweet:',
+      'Discover it before it becomes inaccessible!',
+    ],
+    [
+      'Capture the essence of history with this Certified Moment. Immerse yourself in the tweet by',
+      'captured at',
+      'on',
+      'QuantumOracle reveals an irrefutable glimpse. Check the original tweet:',
+      'Explore it before it vanishes!',
+    ],
+    [
+      'Embark on a journey of verified authenticity with this Authentic Capture. Immerse yourself in the tweet by',
+      'captured at',
+      'on',
+      'QuantumOracle preserves internet history. See the original tweet:',
+      "Explore it while it's still available!",
+    ],
+    [
+      'Discover the power of verified truth with this Notarized Snapshot. Showcasing the tweet by',
+      'captured at',
+      'on',
+      'Delve into authenticated internet history. Check the original tweet:',
+      'Explore it while you can!',
+    ],
+    [
+      'Dive into the realm of verified discovery with this Verified Snapshot. Unveil the tweet by',
+      'captured at',
+      'on',
+      'QuantumOracle captures the essence. Visit the original tweet:',
+      "Explore it before it's lost to the digital abyss!",
+    ],
+  ];
+  const index = randomInt(0, templates.length - 1);
+
+  return `${templates[index][0]} @${author} ${templates[index][1]} ${moment.time} ${
+    templates[index][2]
+  } ${moment.day}. ${templates[index][3]} ${makeTweetUrlWithId(tweetId)}. ${templates[index][4]}`;
 };
