@@ -59,10 +59,7 @@ export const adapterResponse = async (request: Request, response: Response) => {
     const time = new Date(ts).toUTCString();
 
     const description = createNftDescription(tweetId, author, moment);
-    console.log(description);
-
-    console.log(name);
-
+  
     const nftMetadataCid = await uploadToCAS(
       JSON.stringify({
         name,
