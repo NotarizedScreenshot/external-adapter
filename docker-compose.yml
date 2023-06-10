@@ -19,7 +19,7 @@ services:
         max_attempts: 3
         window: 120s
   chrome:
-    image: "browserless/chrome:latest"
+    image: "browserless/chrome:1-chrome-stable"
     deploy:
       restart_policy:
         condition: on-failure
