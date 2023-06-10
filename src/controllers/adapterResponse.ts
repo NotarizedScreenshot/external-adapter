@@ -1,10 +1,8 @@
 import { Request, Response } from 'express';
 import {
-  getTrustedHashSum,
+  getTweetTimelineEntries,
   metadataCidPathFromTweetId,
   metadataToAttirbutes,
-  pngPathFromUrl,
-  trimUrl,
 } from '../helpers';
 import path from 'path';
 import { processPWD } from '../prestart';
@@ -13,6 +11,8 @@ import axios from 'axios';
 import { uploadToCAS } from '../helpers/nftStorage';
 import { IPFS_GATEWAY_BASE_URL } from '../config';
 import { NFTStorage } from 'nft.storage';
+import { createMoment, createNftDescription, createNftName, createTweetData } from '../models';
+import { ITweetTimelineEntry } from '../types';
 
 /**
  * Recieves http request from chainlink node
@@ -37,29 +37,29 @@ export const adapterResponse = async (request: Request, response: Response) => {
     console.log('metadataCid', metadataCid);
 
     console.log('metadata url:', `${IPFS_GATEWAY_BASE_URL}${metadataCid}`);
+
     const metadataResponse = await axios.get(`${IPFS_GATEWAY_BASE_URL}${metadataCid}`);
     const metadata = metadataResponse.data;
 
-    const trustedSha256sum = getTrustedHashSum(String(metadata));
+    const tweetEntry: ITweetTimelineEntry = getTweetTimelineEntries(metadata.tweetdata).find(
+      (entry) => entry.entryId === `tweet-${tweetId}`,
+    )!;
+
+    const tweetData = createTweetData(tweetEntry.content.itemContent.tweet_results.result);
+
+    const author = tweetData?.user.screen_name ? tweetData?.user.screen_name : 'unknown autor';
 
     const client = new NFTStorage({ token: process.env.NFT_STORAGE_TOKEN! });
     const screenshotCid = metadata.stampedScreenShotCid;
 
-    const name = 'Notarized Screenshot 0x' + trustedSha256sum;
-    const image = 'ipfs://' + screenshotCid;
     const ts = Date.now();
+    const moment = createMoment(ts);
+    const name = createNftName(tweetId, moment);
+    const image = 'ipfs://' + screenshotCid;
     const time = new Date(ts).toUTCString();
 
-    //TODO: to be revised as a template string
-    const description =
-      name +
-      ' by QuantumOracle, result of verifying the tweet with id \n' +
-      tweetId +
-      ' at ts ' +
-      time +
-      '\n' +
-      ' Check metadata fields for more details.';
-
+    const description = createNftDescription(tweetId, author, moment);
+  
     const nftMetadataCid = await uploadToCAS(
       JSON.stringify({
         name,

@@ -1,5 +1,6 @@
-import { ITweetBody, ITweetData, ITweetDetails, ITweetResults, ITweetUser } from 'types';
-
+import { makeTweetUrlWithId, randomInt } from '../helpers';
+import { IMoment, ITweetBody, ITweetData, ITweetDetails, ITweetResults, ITweetUser } from 'types';
+import templates from '../config/templates.json';
 export const createTweetData = (tweetResults: ITweetResults): ITweetData | null => {
   //TODO: Issue 52: https://github.com/orgs/NotarizedScreenshot/projects/1/views/1?pane=issue&itemId=27498718\
   //Add handling tombstone tweet
@@ -124,4 +125,31 @@ export const createTweetData = (tweetResults: ITweetResults): ITweetData | null 
     console.log('createTweetData error', error);
     return null;
   }
+};
+
+export const createMoment = (timestamp: number): IMoment => {
+  const date = new Date(timestamp);
+  const dateSplitted = date.toUTCString().split(' ');
+  const time = `${dateSplitted[4]} ${dateSplitted[5]}`;
+  const day = `${dateSplitted[2]} ${dateSplitted[1]}, ${dateSplitted[3]}`;
+
+  return { time, day };
+};
+
+export const createNftName = (tweetId: string, moment: IMoment) => {
+  const index = randomInt(0, templates.nameTemplates.length - 1);
+  return `${templates.nameTemplates[index][0]} ${tweetId} ${templates.nameTemplates[index][1]} ${
+    moment.time
+  } ${templates.nameTemplates[index][2]} ${moment.day}. ${
+    templates.nameTemplates[index][3]
+  }. Original tweet: ${makeTweetUrlWithId(tweetId)}`;
+};
+
+export const createNftDescription = (tweetId: string, author: string, moment: IMoment) => {
+  const index = randomInt(0, templates.descriptionTemplates.length - 1);
+  return `${templates.descriptionTemplates[index][0]} @${author} ${
+    templates.descriptionTemplates[index][1]
+  } ${moment.time} ${templates.descriptionTemplates[index][2]} ${moment.day}. ${
+    templates.descriptionTemplates[index][3]
+  } ${makeTweetUrlWithId(tweetId)}. ${templates.descriptionTemplates[index][4]}`;
 };

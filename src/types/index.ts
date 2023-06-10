@@ -129,3 +129,8 @@ export interface IUploadJobData {
   stampedImageBuffer: Buffer | null;
   mediaUrls: string[];
 }
+
+export interface IMoment {
+  time: string;
+  day: string;
+}
