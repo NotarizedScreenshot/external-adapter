@@ -169,8 +169,11 @@ export const getTweetResultsFromTweetRawData = (tweetRawDataString: string, twee
   }
 };
 
-export const getTweetTimelineEntries = (tweetRawDataString: string): ITweetTimelineEntry[] => {
+export const getTweetTimelineEntries = (
+  tweetRawDataString: string | null,
+): ITweetTimelineEntry[] => {
   try {
+    if (!tweetRawDataString) return [];
     const tweetRawDataParsed = JSON.parse(tweetRawDataString);
     const tweetResponseInstructions =
       tweetRawDataParsed.data['threaded_conversation_with_injections_v2'].instructions;
