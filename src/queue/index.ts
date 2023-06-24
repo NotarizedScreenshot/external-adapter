@@ -14,7 +14,14 @@ import { ITweetTimelineEntry, IUploadJobData } from '../types';
 import { NFTStorage } from 'nft.storage';
 import { createMoment, createNftDescription, createNftName, createTweetData } from '../models';
 
-const redis = `redis://${process.env.REDIS_HOST}:6379`;
+const REDIS_DEFAULT_PORT = 6379;
+const REDIS_DEFAULT_HOST = 'redis';
+
+const redis = `redis://${
+  process.env.REDIS_HOST ? process.env.REDIS_HOST : REDIS_DEFAULT_HOST}:${
+  process.env.REDIS_PORT ? process.env.REDIS_PORT : REDIS_DEFAULT_PORT
+}`;
+
 export const uploadQueue = new Queue<IUploadJobData>('upload_screen_shot', redis);
 
 uploadQueue.process(async (job) => {
