@@ -3,12 +3,18 @@ import path from 'path';
 import axios from 'axios';
 import Queue, { QueueOptions } from 'bull';
 import { processPWD } from '../prestart';
-import { getSocketByUserId, metadataCidPathFromTweetId } from '../helpers';
+import {
+  getSocketByUserId,
+  getTweetTimelineEntries,
+  metadataCidPathFromTweetId,
+  metadataToAttirbutes,
+} from '../helpers';
 import { uploadToCAS } from '../helpers/nftStorage';
-import { IUploadJobData } from '../types';
+import { ITweetTimelineEntry, IUploadJobData } from '../types';
 import { NFTStorage } from 'nft.storage';
+import { createMoment, createNftDescription, createNftName, createTweetData } from '../models';
 
-const redis = `redis://${process.env.REDIS_HOST}:6379`
+const redis = `redis://${process.env.REDIS_HOST}:6379`;
 export const uploadQueue = new Queue<IUploadJobData>('upload_screen_shot', redis);
 
 uploadQueue.process(async (job) => {
@@ -62,6 +68,37 @@ uploadQueue.process(async (job) => {
   const metadataToSaveCid = await uploadToCAS(JSON.stringify(metadataToSave), client);
   job.progress(90);
 
+  const tweetEntry: ITweetTimelineEntry = getTweetTimelineEntries(tweetdata).find(
+    (entry) => entry.entryId === `tweet-${tweetId}`,
+  )!;
+
+  const tweetData = createTweetData(tweetEntry.content.itemContent.tweet_results.result);
+
+  const author = tweetData?.user.screen_name ? tweetData?.user.screen_name : 'unknown autor';
+
+  const ts = Date.now();
+  const moment = createMoment(ts);
+  const name = createNftName(tweetId, moment);
+  const image = 'ipfs://' + screenshotCid;
+  const time = new Date(ts).toUTCString();
+
+  const description = createNftDescription(tweetId, author, moment);
+
+  const attributes = metadata ? metadataToAttirbutes(JSON.parse(metadata)) : [];
+
+  const nftMetadataCid = await uploadToCAS(
+    JSON.stringify({
+      name,
+      image,
+      description,
+      ts,
+      time,
+      tweetId,
+      attributes,
+    }),
+    client,
+  );
+
   await fs.writeFile(
     path.resolve(processPWD, 'data', metadataCidPathFromTweetId(tweetId)),
     JSON.stringify({ [tweetId]: metadataToSaveCid }),
@@ -74,6 +111,7 @@ uploadQueue.process(async (job) => {
     stampedScreenShotCid,
     metadataToSaveCid,
     userId,
+    nftMetadataCid,
   });
 });
 
@@ -81,6 +119,7 @@ uploadQueue.on('completed', async (job) => {
   console.log(`uploadQueue job id:${job.id} name: ${job.name} completed `);
   const data = await job.finished();
   const socket = getSocketByUserId(data.userId);
+  console.log(data);
   if (!!socket) socket.emit('uploadComplete', JSON.stringify(data));
   job.remove();
 });

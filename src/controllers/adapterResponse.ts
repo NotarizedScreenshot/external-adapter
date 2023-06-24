@@ -28,55 +28,21 @@ export const adapterResponse = async (request: Request, response: Response) => {
   try {
     console.log('adapter response POST, url:', request.url);
     console.log('request body: ', request.body);
-    const tweetId = request.body.data.tweetId as string;
-    console.log('tweet id: ', tweetId);
+    const tweetId = request.body.tweetId as string;
+    const cid = request.body.cid as string;
+    console.log('tweet id: ', tweetId, 'cid: ', cid);
 
-    const metadataCidPath = path.resolve(processPWD, 'data', metadataCidPathFromTweetId(tweetId));
-    console.log('metadataCidPath:', metadataCidPath);
-    const metadataCid = JSON.parse(await fs.readFile(metadataCidPath, 'utf-8'))[tweetId];
-    console.log('metadataCid', metadataCid);
-
-    console.log('metadata url:', `${IPFS_GATEWAY_BASE_URL}${metadataCid}`);
-
-    const metadataResponse = await axios.get(`${IPFS_GATEWAY_BASE_URL}${metadataCid}`);
+    const metadataResponse = await axios.get(`${IPFS_GATEWAY_BASE_URL}${cid}`);
     const metadata = metadataResponse.data;
 
-    const tweetEntry: ITweetTimelineEntry = getTweetTimelineEntries(metadata.tweetdata).find(
-      (entry) => entry.entryId === `tweet-${tweetId}`,
-    )!;
-
-    const tweetData = createTweetData(tweetEntry.content.itemContent.tweet_results.result);
-
-    const author = tweetData?.user.screen_name ? tweetData?.user.screen_name : 'unknown autor';
-
-    const client = new NFTStorage({ token: process.env.NFT_STORAGE_TOKEN! });
-    const screenshotCid = metadata.stampedScreenShotCid;
-
-    const ts = Date.now();
-    const moment = createMoment(ts);
-    const name = createNftName(tweetId, moment);
-    const image = 'ipfs://' + screenshotCid;
-    const time = new Date(ts).toUTCString();
-
-    const description = createNftDescription(tweetId, author, moment);
-  
-    const nftMetadataCid = await uploadToCAS(
-      JSON.stringify({
-        name,
-        image,
-        description,
-        ts,
-        time,
-        tweetId,
-        attributes: metadataToAttirbutes(JSON.parse(metadata.metadata)),
-      }),
-      client,
-    );
+    if (tweetId !== metadata.tweetId)
+      return response.status(422).json({
+        error: `tweetId do not match, received: ${tweetId}, metadata tweetId: ${metadata.tweetId}`,
+      });
 
     const data = {
-      data: {
-        cid: nftMetadataCid,
-      },
+      cid,
+      tweetId,
     };
 
     console.log('response data: ', data);
