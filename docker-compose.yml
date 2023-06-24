@@ -11,7 +11,7 @@ services:
         max_attempts: 10
         window: 600s
   redis:
-    image: "redis:alpine"
+    image: "redis:alpine3.18"
     deploy:
       restart_policy:
         condition: on-failure
