@@ -52,8 +52,10 @@ export const adapterResponse = async (request: Request, response: Response) => {
       });
 
     const data = {
+      data: {
+        cid
+      },
       cid,
-      tweetId,
     };
 
     console.log('response data: ', data);
