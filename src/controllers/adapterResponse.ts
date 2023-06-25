@@ -28,8 +28,10 @@ export const adapterResponse = async (request: Request, response: Response) => {
   try {
     console.log('adapter response POST, url:', request.url);
     console.log('request body: ', request.body);
-    const tweetId = request.body.data.tweetId as string;
+    const tweetId = request.body.tweetId as string;
+    const cid = request.body.tweetId as string;
     console.log('tweet id: ', tweetId);
+    console.log('cid: ', cid);
 
     const metadataCidPath = path.resolve(processPWD, 'data', metadataCidPathFromTweetId(tweetId));
     console.log('metadataCidPath:', metadataCidPath);
@@ -59,7 +61,7 @@ export const adapterResponse = async (request: Request, response: Response) => {
     const time = new Date(ts).toUTCString();
 
     const description = createNftDescription(tweetId, author, moment);
-  
+
     const nftMetadataCid = await uploadToCAS(
       JSON.stringify({
         name,
