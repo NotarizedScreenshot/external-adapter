@@ -32,8 +32,19 @@ export const adapterResponse = async (request: Request, response: Response) => {
     const cid = request.body.cid as string;
     console.log('tweet id: ', tweetId, 'cid: ', cid);
 
+    const metadataCidPath = path.resolve(processPWD, 'data', metadataCidPathFromTweetId(tweetId));
+    console.log('metadataCidPath:', metadataCidPath);
+    const metadataCid = JSON.parse(await fs.readFile(metadataCidPath, 'utf-8'))[tweetId];
+    console.log('metadataCid', metadataCid);
+
+    console.log('metadata url:', `${IPFS_GATEWAY_BASE_URL}${metadataCid}`);
+    console.log('metadata url2:', `${IPFS_GATEWAY_BASE_URL}${cid}`);
+
     const metadataResponse = await axios.get(`${IPFS_GATEWAY_BASE_URL}${cid}`);
+    console.log('metadataResponse', metadataResponse);
     const metadata = metadataResponse.data;
+    console.log('metadata: ', metadata);
+    console.log('tweetId !== metadata.tweetId', tweetId, metadata.tweetId, tweetId !== metadata.tweetId);
 
     if (tweetId !== metadata.tweetId)
       return response.status(422).json({
