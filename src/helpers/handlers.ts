@@ -24,8 +24,8 @@ export const getMetaDataPromise = (page: Page, tweetId: string) =>
     page.on('response', async (puppeteerResponse: HTTPResponse) => {
       const responseUrl = puppeteerResponse.url();
       const trimmedResponseUrl = trimUrl(responseUrl);
-      if (trimmedResponseUrl === tweetUrl) {
-        const headers = puppeteerResponse.headers();
+      const headers = puppeteerResponse.headers();
+      if (trimmedResponseUrl === tweetUrl && !!headers['location']) {
         const host = 'twitter.com';
         const dns = await getDnsInfo(host);
         const meta: IMetadata = {
@@ -124,16 +124,26 @@ const getScreenshotWithPuppeteer = async (
       .goto(tweetUrl, puppeteerDefaultConfig.page.goto.gotoWaitUntilIdle)
       .then(async () => {
         await page.evaluate(() => {
-          const bottomBar = document.querySelector('[data-testid="BottomBar"]') as HTMLElement;
-          if (bottomBar) {
+          const bottomBars = document.querySelectorAll('[data-testid="BottomBar"]');
+          bottomBars.forEach((bottomBarElement) => {
+            const bottomBar = bottomBarElement as HTMLElement;
             bottomBar.style.display = 'none';
-          }
+          });
         });
-        const articleElement = (await page.waitForSelector('article'))!;
-        const boundingBox = (await articleElement.boundingBox())!;
+
+        const mainElement = (await page.waitForSelector('main'))!;
+        const mailboundingBox = (await mainElement.boundingBox())!;
+
+        const articleElement = (await page.waitForSelector(
+          `article:has(a[href$="/status/${tweetId}"])`,
+        ))!;
+
+        const articleBoundingBox = (await articleElement.boundingBox())!;
+
+        articleBoundingBox.y -= mailboundingBox.y;
 
         const screenshotImageBuffer: Buffer = await page.screenshot({
-          clip: { ...boundingBox },
+          clip: { ...articleBoundingBox },
         });
 
         return makeImageBase64UrlfromBuffer(screenshotImageBuffer);

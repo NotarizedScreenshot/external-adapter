@@ -86,7 +86,7 @@ uploadQueue.process(async (job) => {
   const ts = Date.now();
   const moment = createMoment(ts);
   const name = createNftName(tweetId, moment);
-  const image = 'ipfs://' + screenshotCid;
+  const image = 'ipfs://' + stampedScreenShotCid;
   const time = new Date(ts).toUTCString();
 
   const description = createNftDescription(tweetId, author, moment);
