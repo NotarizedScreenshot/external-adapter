@@ -1,3 +1,5 @@
+import fs from 'fs/promises';
+import path from 'path';
 import {
   getDnsInfo,
   getMediaUrlsToUpload,
@@ -7,16 +9,52 @@ import {
   makeTweetUrlWithId,
   trimUrl,
 } from '../helpers';
-import { Browser, HTTPResponse, Page } from 'puppeteer';
+import puppeteer, { Browser, ElementHandle, HTTPResponse, Page } from 'puppeteer';
 import { IGetScreenshotResponseData, IMetadata, ITweetTimelineEntry } from '../types';
-import { DEFAULT_TIMEOUT_MS, screenshotResponseDataOrderedKeys } from '../config';
+import {
+  DEFAULT_TIMEOUT_MS,
+  TWITTER_LOGIN_BUTTON_TEXT_CONTENT,
+  TWITTER_NEXT_BUTTON_TEXT_CONTENT,
+  screenshotResponseDataOrderedKeys,
+} from '../config';
 import { Request, Response } from 'express';
 import { reportError } from '../helpers';
 import { puppeteerDefaultConfig } from '../config';
-import puppeteer from 'puppeteer';
 import { makeBufferFromBase64ImageUrl, makeStampedImage } from './images';
 import { createTweetData } from '../models';
 import { uploadQueue } from '../queue';
+import { processPWD } from '../prestart';
+
+export const getBoundingBox = async (element: ElementHandle | null) => {
+  if (!!element) {
+    const elementBoundingBox = await element.boundingBox();
+    return elementBoundingBox ? elementBoundingBox : puppeteerDefaultConfig.defaultBoundingBox;
+  }
+  return puppeteerDefaultConfig.defaultBoundingBox;
+};
+
+export const getSavedCookies = (): Promise<
+  { name: string; value: string; [id: string]: string | number | boolean }[] | null
+> =>
+  fs
+    .readFile(path.resolve(processPWD, 'data', 'cookies.json'), 'utf-8')
+    .then((cockiesString) => JSON.parse(cockiesString))
+    .catch((error) => {
+      console.error(error.message);
+      return null;
+    });
+
+export const findElementByTextContentAsync = async (
+  elements: ElementHandle[],
+  textValue: string,
+): Promise<ElementHandle | null> => {
+  for (let i = 0; i < elements.length; i += 1) {
+    const property = await elements[i].getProperty('textContent');
+    const value = await property.jsonValue();
+    if (value?.toLocaleLowerCase() === textValue.toLocaleLowerCase()) return elements[i];
+  }
+  return null;
+};
 
 export const getMetaDataPromise = (page: Page, tweetId: string) =>
   new Promise<string>((resolve, reject) => {
@@ -62,6 +100,104 @@ export const getTweetDataPromise = (page: Page, tweetId: string) =>
       setTimeout(() => reject(`failed to get tweet ${tweetId} tweet data`), DEFAULT_TIMEOUT_MS);
     });
   });
+
+export const screenshotPromise = async (page: Page, tweetId: string) => {
+  const cookies = await getSavedCookies();
+
+  if (!cookies) {
+    await page.goto(
+      'https://twitter.com/i/flow/login',
+      puppeteerDefaultConfig.page.goto.gotoWaitUntilIdle,
+    );
+    await page.waitForSelector('input');
+    console.log(process.env.TWITTER_PASSWORD);
+    console.log(process.env.TWITTER_USERNAME);
+    if (!process.env.TWITTER_USERNAME) {
+      console.log(`Twitter username is falsy: '${process.env.TWITTER_USERNAME}'`);
+      return null;
+    }
+    await page.type('input', process.env.TWITTER_USERNAME);
+
+    const loginPageButtons = await page.$$('[role="button"]');
+
+    const nextButton = await findElementByTextContentAsync(
+      loginPageButtons,
+      TWITTER_NEXT_BUTTON_TEXT_CONTENT,
+    );
+
+    console.log(nextButton);
+    if (!nextButton) {
+      console.log(
+        `Twitter Log in page error: can not get button '${TWITTER_NEXT_BUTTON_TEXT_CONTENT}'`,
+      );
+      return null;
+    }
+
+    await nextButton.click();
+    console.log('click');
+    await page.waitForSelector('input');
+    console.log('click');
+    if (!process.env.TWITTER_PASSWORD) {
+      console.log(`Twitter password is falsy: '${process.env.TWITTER_PASSWORD}'`);
+      return null;
+    }
+    await page.type('input', process.env.TWITTER_PASSWORD);
+
+    const buttons2 = await page.$$('[role="button"]');
+
+    const logInButton = await findElementByTextContentAsync(
+      buttons2,
+      TWITTER_LOGIN_BUTTON_TEXT_CONTENT,
+    );
+
+    if (!logInButton) {
+      console.log(
+        `Twitter Log in page error: can not get button '${TWITTER_NEXT_BUTTON_TEXT_CONTENT}'`,
+      );
+
+      return null;
+    }
+
+    await logInButton.click();
+
+    await page.waitForSelector('article');
+    const coockies = await page.cookies();
+    fs.writeFile(path.resolve(processPWD, 'data', 'cookies.json'), JSON.stringify(coockies));
+  } else {
+    await page.setCookie(...cookies);
+  }
+
+  const tweetUrl = makeTweetUrlWithId(tweetId);
+
+  await page.goto(tweetUrl, puppeteerDefaultConfig.page.goto.gotoWaitUntilIdle);
+
+  const mainElement = await page.waitForSelector('main');
+  const mailboundingBox = await getBoundingBox(mainElement);
+  const articleElement = await page.waitForSelector(`article:has(a[href$="/status/${tweetId}"])`);
+  const articleBoundingBox = await getBoundingBox(articleElement);
+
+  articleBoundingBox.y -= mailboundingBox.y;
+
+  await page.evaluate(() => {
+    const bottomBars = document.querySelectorAll('[data-testid="BottomBar"]');
+    bottomBars.forEach((bottomBarElement) => {
+      const bottomBar = bottomBarElement as HTMLElement;
+      bottomBar.style.display = 'none';
+    });
+    const dialogs = document.querySelectorAll('[role="dialog"]');
+    dialogs.forEach((bottomBarElement) => {
+      const bottomBar = bottomBarElement as HTMLElement;
+      bottomBar.style.display = 'none';
+    });
+  });
+
+  const screenshotImageBuffer: Buffer = await page.screenshot({
+    clip: { ...articleBoundingBox },
+    path: `${tweetId}.png`,
+  });
+
+  return makeImageBase64UrlfromBuffer(screenshotImageBuffer);
+};
 
 export const screenshotWithPuppeteer = async (
   request: Request,
@@ -120,31 +256,12 @@ const getScreenshotWithPuppeteer = async (
     });
     await page.setUserAgent(puppeteerDefaultConfig.userAgent);
 
-    const screenShotPromise: Promise<string> = page
-      .goto(tweetUrl, puppeteerDefaultConfig.page.goto.gotoWaitUntilIdle)
-      .then(async () => {
-        await page.evaluate(() => {
-          const bottomBar = document.querySelector('[data-testid="BottomBar"]') as HTMLElement;
-          if (bottomBar) {
-            bottomBar.style.display = 'none';
-          }
-        });
-        const articleElement = (await page.waitForSelector('article'))!;
-        const boundingBox = (await articleElement.boundingBox())!;
-
-        const screenshotImageBuffer: Buffer = await page.screenshot({
-          clip: { ...boundingBox },
-        });
-
-        return makeImageBase64UrlfromBuffer(screenshotImageBuffer);
-      });
-
-    const promises: Iterable<Promise<string>> = [
+    const promises: Iterable<Promise<string | null>> = [
       getTweetDataPromise(page, tweetId),
       getMetaDataPromise(page, tweetId),
-      screenShotPromise,
+      screenshotPromise(page, tweetId),
     ];
-    const allData = await Promise.allSettled<string>(promises);
+    const allData = await Promise.allSettled<string | null>(promises);
     const fetchedData = allData.reduce<IGetScreenshotResponseData>(
       (acc, val, index) => {
         acc[screenshotResponseDataOrderedKeys[index]] =
