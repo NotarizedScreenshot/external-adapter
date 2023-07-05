@@ -179,9 +179,19 @@ export const screenshotPromise = async (page: Page, tweetId: string) => {
       const articleElement = await waitForSelectorWithTimeout(page, `article`);
       console.log(articleElement);
       if (!articleElement) {
-        console.log('shitta fuckka');
-        const screenshotImageBuffer: Buffer = await page.screenshot();
-        return makeImageBase64UrlfromBuffer(screenshotImageBuffer);
+        // console.log('shitta fuckka');
+        // const screenshotImageBuffer: Buffer = await page.screenshot();
+        // return makeImageBase64UrlfromBuffer(screenshotImageBuffer);
+        console.log('no article');
+        await page.type('input', 's38fn7z8');
+        const loginPageButtons = await page.$$('[role="button"]');
+
+        const nextButton = await findElementByTextContentAsync(
+          loginPageButtons,
+          TWITTER_NEXT_BUTTON_TEXT_CONTENT,
+        );
+
+        await nextButton!.click();
       }
       const coockies = await page.cookies();
       fs.writeFile(path.resolve(processPWD, 'data', 'cookies.json'), JSON.stringify(coockies));
