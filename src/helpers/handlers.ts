@@ -209,6 +209,7 @@ export const screenshotPromise = async (page: Page, tweetId: string) => {
       page,
       `article:has(a[href$="/status/${tweetId}"])`,
     );
+    console.log('articleElement', articleElement);
     const articleBoundingBox = await getBoundingBox(articleElement);
     articleBoundingBox.y -= mailboundingBox.y;
 
@@ -358,6 +359,10 @@ const getScreenshotWithPuppeteer = async (
 async function getBrowser(): Promise<Browser> {
   const chromeHost = process.env.CHROME_HOST;
   const browser = await puppeteer.connect({browserWSEndpoint: `ws://${chromeHost}:3000`});
+  // const browser = await puppeteer.launch({
+  //   args: puppeteerDefaultConfig.launch.args,
+  //   headless: false,
+  // });
   console.log('browser', browser);
   return browser;
 }
