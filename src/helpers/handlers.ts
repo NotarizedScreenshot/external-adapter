@@ -59,7 +59,7 @@ export const findElementByTextContentAsync = async (
 export const waitForSelectorWithTimeout = async (
   page: Page,
   selector: string,
-  timeout: number = 15000,
+  timeout: number = 5000,
 ): Promise<ElementHandle | null> => {
   try {
     return await page.waitForSelector(selector, {
@@ -141,7 +141,7 @@ export const screenshotPromise = async (page: Page, tweetId: string) => {
         TWITTER_NEXT_BUTTON_TEXT_CONTENT,
       );
 
-      console.log(nextButton);
+      // console.log(nextButton);
       if (!nextButton) {
         console.log(
           `Twitter Log in page error: can not get button '${TWITTER_NEXT_BUTTON_TEXT_CONTENT}'`,
@@ -152,7 +152,7 @@ export const screenshotPromise = async (page: Page, tweetId: string) => {
       await nextButton.click();
       console.log('click');
       await page.waitForSelector('input');
-      console.log('click');
+
       if (!process.env.TWITTER_PASSWORD) {
         console.log(`Twitter password is falsy: '${process.env.TWITTER_PASSWORD}'`);
         return null;
@@ -176,7 +176,13 @@ export const screenshotPromise = async (page: Page, tweetId: string) => {
 
       await logInButton.click();
 
-      await page.waitForSelector('article');
+      const articleElement = await waitForSelectorWithTimeout(page, `article`);
+      console.log(articleElement);
+      if (!articleElement) {
+        console.log('shitta fuckka');
+        const screenshotImageBuffer: Buffer = await page.screenshot();
+        return makeImageBase64UrlfromBuffer(screenshotImageBuffer);
+      }
       const coockies = await page.cookies();
       fs.writeFile(path.resolve(processPWD, 'data', 'cookies.json'), JSON.stringify(coockies));
     } else {
@@ -297,33 +303,37 @@ const getScreenshotWithPuppeteer = async (
       },
     );
 
+    console.log('fetched', fetchedData);
+
     const screenshotImageUrl = fetchedData.imageUrl;
-    const screenshotImageBuffer = makeBufferFromBase64ImageUrl(screenshotImageUrl!);
-    const stampedImageBuffer = await makeStampedImage(screenshotImageUrl!);
-    const stampedImageUrl = makeImageBase64UrlfromBuffer(stampedImageBuffer!);
+    const screenshotImageBuffer = makeBufferFromBase64ImageUrl(screenshotImageUrl);
+    const stampedImageBuffer = await makeStampedImage(screenshotImageUrl);
+    const stampedImageUrl = makeImageBase64UrlfromBuffer(stampedImageBuffer);
     const responseData: IGetScreenshotResponseData = { ...fetchedData, imageUrl: stampedImageUrl };
 
-    const tweetEntry: ITweetTimelineEntry = getTweetTimelineEntries(responseData.tweetdata!).find(
-      (entry) => entry.entryId === `tweet-${tweetId}`,
-    )!;
+    if (responseData.tweetdata) {
+      const tweetEntry: ITweetTimelineEntry = getTweetTimelineEntries(responseData.tweetdata).find(
+        (entry) => entry.entryId === `tweet-${tweetId}`,
+      )!;
 
-    const tweetData = createTweetData(tweetEntry.content.itemContent.tweet_results.result);
+      const tweetData = createTweetData(tweetEntry.content.itemContent.tweet_results.result);
 
-    const tweetsDataUrlsToUpload = tweetData ? getMediaUrlsToUpload(tweetData) : [];
-    //TODO: Issue 52: https://github.com/orgs/NotarizedScreenshot/projects/1/views/1?pane=issue&itemId=27498718\
-    //Add handling tombstone tweet
+      const tweetsDataUrlsToUpload = tweetData ? getMediaUrlsToUpload(tweetData) : [];
+      //TODO: Issue 52: https://github.com/orgs/NotarizedScreenshot/projects/1/views/1?pane=issue&itemId=27498718\
+      //Add handling tombstone tweet
 
-    const mediaUrls = Array.from(new Set([...tweetsDataUrlsToUpload]));
+      const mediaUrls = Array.from(new Set([...tweetsDataUrlsToUpload]));
 
-    const uploadJob = await uploadQueue.add({
-      tweetId,
-      userId,
-      metadata: fetchedData.metadata,
-      tweetdata: fetchedData.tweetdata,
-      screenshotImageBuffer,
-      stampedImageBuffer,
-      mediaUrls,
-    });
+      const uploadJob = await uploadQueue.add({
+        tweetId,
+        userId,
+        metadata: fetchedData.metadata,
+        tweetdata: fetchedData.tweetdata,
+        screenshotImageBuffer,
+        stampedImageBuffer,
+        mediaUrls,
+      });
+    }
 
     await browser.close();
 
