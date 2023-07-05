@@ -1,9 +1,12 @@
-version: "3.9"
+version: '3.9'
 services:
   notaryshot-adapter:
-    image: "chainhackers/quantumoracle-adapter:${TAG}"
+    image: 'chainhackers/quantumoracle-adapter:${TAG}'
+    environment:
+      - TWITTER_USER_NAME: '${TWITTER_USER_NAME}'
+      - TWITTER_PASSWORD: '${TWITTER_PASSWORD}'
     ports:
-      - "9000:9000"
+      - '9000:9000'
     deploy:
       restart_policy:
         condition: on-failure
@@ -11,7 +14,7 @@ services:
         max_attempts: 10
         window: 600s
   redis:
-    image: "redis:alpine3.18"
+    image: 'redis:alpine3.18'
     deploy:
       restart_policy:
         condition: on-failure
@@ -19,7 +22,7 @@ services:
         max_attempts: 3
         window: 120s
   chrome:
-    image: "browserless/chrome:1-chrome-stable"
+    image: 'browserless/chrome:1-chrome-stable'
     deploy:
       restart_policy:
         condition: on-failure
