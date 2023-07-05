@@ -56,6 +56,21 @@ export const findElementByTextContentAsync = async (
   return null;
 };
 
+export const waitForSelectorWithTimeout = async (
+  page: Page,
+  selector: string,
+  timeout: number = 15000,
+): Promise<ElementHandle | null> => {
+  try {
+    return await page.waitForSelector(selector, {
+      timeout,
+    });
+  } catch (error) {
+    console.log(`Can not get selector: ${selector}, exceed timeout ${timeout} ms`);
+    return null;
+  }
+};
+
 export const getMetaDataPromise = (page: Page, tweetId: string) =>
   new Promise<string>((resolve, reject) => {
     const tweetUrl = makeTweetUrlWithId(tweetId);
@@ -102,101 +117,108 @@ export const getTweetDataPromise = (page: Page, tweetId: string) =>
   });
 
 export const screenshotPromise = async (page: Page, tweetId: string) => {
-  const cookies = await getSavedCookies();
+  try {
+    const cookies = await getSavedCookies();
 
-  if (!cookies) {
-    await page.goto(
-      'https://twitter.com/i/flow/login',
-      puppeteerDefaultConfig.page.goto.gotoWaitUntilIdle,
-    );
-    await page.waitForSelector('input');
-    console.log(process.env.TWITTER_PASSWORD);
-    console.log(process.env.TWITTER_USERNAME);
-    if (!process.env.TWITTER_USERNAME) {
-      console.log(`Twitter username is falsy: '${process.env.TWITTER_USERNAME}'`);
-      return null;
-    }
-    await page.type('input', process.env.TWITTER_USERNAME);
-
-    const loginPageButtons = await page.$$('[role="button"]');
-
-    const nextButton = await findElementByTextContentAsync(
-      loginPageButtons,
-      TWITTER_NEXT_BUTTON_TEXT_CONTENT,
-    );
-
-    console.log(nextButton);
-    if (!nextButton) {
-      console.log(
-        `Twitter Log in page error: can not get button '${TWITTER_NEXT_BUTTON_TEXT_CONTENT}'`,
+    if (!cookies) {
+      await page.goto(
+        'https://twitter.com/i/flow/login',
+        puppeteerDefaultConfig.page.goto.gotoWaitUntilIdle,
       );
-      return null;
-    }
+      await page.waitForSelector('input');
+      console.log(process.env.TWITTER_PASSWORD);
+      console.log(process.env.TWITTER_USERNAME);
+      if (!process.env.TWITTER_USERNAME) {
+        console.log(`Twitter username is falsy: '${process.env.TWITTER_USERNAME}'`);
+        return null;
+      }
+      await page.type('input', process.env.TWITTER_USERNAME);
 
-    await nextButton.click();
-    console.log('click');
-    await page.waitForSelector('input');
-    console.log('click');
-    if (!process.env.TWITTER_PASSWORD) {
-      console.log(`Twitter password is falsy: '${process.env.TWITTER_PASSWORD}'`);
-      return null;
-    }
-    await page.type('input', process.env.TWITTER_PASSWORD);
+      const loginPageButtons = await page.$$('[role="button"]');
 
-    const buttons2 = await page.$$('[role="button"]');
-
-    const logInButton = await findElementByTextContentAsync(
-      buttons2,
-      TWITTER_LOGIN_BUTTON_TEXT_CONTENT,
-    );
-
-    if (!logInButton) {
-      console.log(
-        `Twitter Log in page error: can not get button '${TWITTER_NEXT_BUTTON_TEXT_CONTENT}'`,
+      const nextButton = await findElementByTextContentAsync(
+        loginPageButtons,
+        TWITTER_NEXT_BUTTON_TEXT_CONTENT,
       );
 
-      return null;
+      console.log(nextButton);
+      if (!nextButton) {
+        console.log(
+          `Twitter Log in page error: can not get button '${TWITTER_NEXT_BUTTON_TEXT_CONTENT}'`,
+        );
+        return null;
+      }
+
+      await nextButton.click();
+      console.log('click');
+      await page.waitForSelector('input');
+      console.log('click');
+      if (!process.env.TWITTER_PASSWORD) {
+        console.log(`Twitter password is falsy: '${process.env.TWITTER_PASSWORD}'`);
+        return null;
+      }
+      await page.type('input', process.env.TWITTER_PASSWORD);
+
+      const buttons2 = await page.$$('[role="button"]');
+
+      const logInButton = await findElementByTextContentAsync(
+        buttons2,
+        TWITTER_LOGIN_BUTTON_TEXT_CONTENT,
+      );
+
+      if (!logInButton) {
+        console.log(
+          `Twitter Log in page error: can not get button '${TWITTER_NEXT_BUTTON_TEXT_CONTENT}'`,
+        );
+
+        return null;
+      }
+
+      await logInButton.click();
+
+      await page.waitForSelector('article');
+      const coockies = await page.cookies();
+      fs.writeFile(path.resolve(processPWD, 'data', 'cookies.json'), JSON.stringify(coockies));
+    } else {
+      await page.setCookie(...cookies);
     }
 
-    await logInButton.click();
+    const tweetUrl = makeTweetUrlWithId(tweetId);
 
-    await page.waitForSelector('article');
-    const coockies = await page.cookies();
-    fs.writeFile(path.resolve(processPWD, 'data', 'cookies.json'), JSON.stringify(coockies));
-  } else {
-    await page.setCookie(...cookies);
+    await page.goto(tweetUrl, puppeteerDefaultConfig.page.goto.gotoWaitUntilIdle);
+
+    const mainElement = await page.waitForSelector('main');
+    const mailboundingBox = await getBoundingBox(mainElement);
+    const articleElement = await waitForSelectorWithTimeout(
+      page,
+      `article:has(a[href$="/status/${tweetId}"])`,
+    );
+    const articleBoundingBox = await getBoundingBox(articleElement);
+    articleBoundingBox.y -= mailboundingBox.y;
+
+    await page.evaluate(() => {
+      const bottomBars = document.querySelectorAll('[data-testid="BottomBar"]');
+      bottomBars.forEach((bottomBarElement) => {
+        const bottomBar = bottomBarElement as HTMLElement;
+
+        bottomBar.style.display = 'none';
+      });
+      const dialogs = document.querySelectorAll('[role="dialog"]');
+      dialogs.forEach((bottomBarElement) => {
+        const bottomBar = bottomBarElement as HTMLElement;
+        bottomBar.style.display = 'none';
+      });
+    });
+
+    const screenshotImageBuffer: Buffer = await page.screenshot({
+      clip: { ...articleBoundingBox },
+    });
+
+    return makeImageBase64UrlfromBuffer(screenshotImageBuffer);
+  } catch (error: any) {
+    console.log('Can not get screenshot:', error.message);
+    return null;
   }
-
-  const tweetUrl = makeTweetUrlWithId(tweetId);
-
-  await page.goto(tweetUrl, puppeteerDefaultConfig.page.goto.gotoWaitUntilIdle);
-
-  const mainElement = await page.waitForSelector('main');
-  const mailboundingBox = await getBoundingBox(mainElement);
-  const articleElement = await page.waitForSelector(`article:has(a[href$="/status/${tweetId}"])`);
-  const articleBoundingBox = await getBoundingBox(articleElement);
-
-  articleBoundingBox.y -= mailboundingBox.y;
-
-  await page.evaluate(() => {
-    const bottomBars = document.querySelectorAll('[data-testid="BottomBar"]');
-    bottomBars.forEach((bottomBarElement) => {
-      const bottomBar = bottomBarElement as HTMLElement;
-      bottomBar.style.display = 'none';
-    });
-    const dialogs = document.querySelectorAll('[role="dialog"]');
-    dialogs.forEach((bottomBarElement) => {
-      const bottomBar = bottomBarElement as HTMLElement;
-      bottomBar.style.display = 'none';
-    });
-  });
-
-  const screenshotImageBuffer: Buffer = await page.screenshot({
-    clip: { ...articleBoundingBox },
-    path: `${tweetId}.png`,
-  });
-
-  return makeImageBase64UrlfromBuffer(screenshotImageBuffer);
 };
 
 export const screenshotWithPuppeteer = async (
