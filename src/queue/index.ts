@@ -79,7 +79,14 @@ uploadQueue.process(async (job) => {
     (entry) => entry.entryId === `tweet-${tweetId}`,
   )!;
 
-  const tweetData = createTweetData(tweetEntry.content.itemContent.tweet_results.result);
+
+
+  const tweetData = tweetEntry.content ? createTweetData(tweetEntry.content.itemContent.tweet_results.result) : (() => {
+    const tweetRawDataParsed = JSON.parse(tweetdata!);
+    return createTweetData(tweetRawDataParsed.data.tweetResult.result);
+
+    
+  })();
 
   const author = tweetData?.user.screen_name ? tweetData?.user.screen_name : 'unknown autor';
 
