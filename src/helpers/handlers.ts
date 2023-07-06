@@ -107,7 +107,7 @@ export const getTweetDataPromise = (page: Page, tweetId: string) =>
       );
 
       if (
-        responseUrl.match(/TweetDetail/g) &&
+        (responseUrl.match(/TweetDetail/g) || responseUrl.match(/TweetResultByRestId/g)) &&
         headers['content-type'] &&
         headers['content-type'].includes('application/json')
       ) {
@@ -123,8 +123,8 @@ export const getTweetDataPromise = (page: Page, tweetId: string) =>
           console.log('getTweetDataPromise error:', error.message);
         }
       }
-      setTimeout(() => reject(`failed to get tweet ${tweetId} tweet data`), 120000);
-      // setTimeout(() => reject(`failed to get tweet ${tweetId} tweet data`), DEFAULT_TIMEOUT_MS);
+      // setTimeout(() => reject(`failed to get tweet ${tweetId} tweet data`), 120000);
+      setTimeout(() => reject(`failed to get tweet ${tweetId} tweet data`), DEFAULT_TIMEOUT_MS);
     });
   });
 
