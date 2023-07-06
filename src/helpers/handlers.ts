@@ -337,6 +337,24 @@ const getScreenshotWithPuppeteer = async (
     if (!responseData.tweetdata) console.log('no response data');
 
     if (responseData.tweetdata) {
+      const tweetRawDataParsed = JSON.parse(responseData.tweetdata);
+      if (tweetRawDataParsed.data.tweetResult.result) {
+        const tweetData = createTweetData(tweetRawDataParsed.data.tweetResult.result);
+        const tweetsDataUrlsToUpload = tweetData ? getMediaUrlsToUpload(tweetData) : [];
+        const mediaUrls = Array.from(new Set([...tweetsDataUrlsToUpload]));
+
+        const uploadJob = await uploadQueue.add({
+          tweetId,
+          userId,
+          metadata: fetchedData.metadata,
+          tweetdata: fetchedData.tweetdata,
+          screenshotImageBuffer,
+          stampedImageBuffer,
+          mediaUrls,
+        });
+
+
+      }
       const tweetEntry: ITweetTimelineEntry = getTweetTimelineEntries(
         'responseData.tweetdata',
       ).find((entry) => entry.entryId === `tweet-${tweetId}`)!;
@@ -379,7 +397,7 @@ const getScreenshotWithPuppeteer = async (
 
 async function getBrowser(): Promise<Browser> {
   const chromeHost = process.env.CHROME_HOST;
-  const browser = await puppeteer.connect({browserWSEndpoint: `ws://${chromeHost}:3000`});
+  const browser = await puppeteer.connect({ browserWSEndpoint: `ws://${chromeHost}:3000` });
   // const browser = await puppeteer.launch({
   //   args: puppeteerDefaultConfig.launch.args,
   //   headless: false,
