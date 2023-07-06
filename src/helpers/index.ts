@@ -152,6 +152,7 @@ export const getTrustedHashSum = (data: string | Buffer) =>
 export const getTweetResultsFromTweetRawData = (tweetRawDataString: string, tweetId: string) => {
   try {
     const tweetRawDataParsed = JSON.parse(tweetRawDataString);
+    console.log('getTweetResultsFromTweetRawData', tweetRawDataParsed);
     const tweetResponseInstructions =
       tweetRawDataParsed.data['threaded_conversation_with_injections_v2'].instructions;
 
@@ -165,7 +166,7 @@ export const getTweetResultsFromTweetRawData = (tweetRawDataString: string, twee
 
     return tweetEntry.content.itemContent.tweet_results.result;
   } catch (error) {
-    console.error(error);
+    console.error('getTweetResultsFromTweetRawData', error);
     return null;
   }
 };
@@ -184,7 +185,7 @@ export const getTweetTimelineEntries = (
     ).entries;
     return tweetTimeLineEntries;
   } catch (error) {
-    console.error(error);
+    console.error('getTweetTimelineEntries', error);
     return [];
   }
 };
