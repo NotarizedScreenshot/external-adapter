@@ -337,34 +337,37 @@ const getScreenshotWithPuppeteer = async (
     if (!responseData.tweetdata) console.log('no response data');
 
     if (responseData.tweetdata) {
-      const tweetEntry: ITweetTimelineEntry = getTweetTimelineEntries(responseData.tweetdata).find(
-        (entry) => entry.entryId === `tweet-${tweetId}`,
-      )!;
+      const tweetEntry: ITweetTimelineEntry = getTweetTimelineEntries(
+        'responseData.tweetdata',
+      ).find((entry) => entry.entryId === `tweet-${tweetId}`)!;
+      console.log('tweetEntry', tweetEntry);
 
-      const tweetData = createTweetData(tweetEntry.content.itemContent.tweet_results.result);
+      if (tweetEntry?.content) {
+        const tweetData = createTweetData(tweetEntry.content.itemContent.tweet_results.result);
 
-      const tweetsDataUrlsToUpload = tweetData ? getMediaUrlsToUpload(tweetData) : [];
-      //TODO: Issue 52: https://github.com/orgs/NotarizedScreenshot/projects/1/views/1?pane=issue&itemId=27498718\
-      //Add handling tombstone tweet
+        const tweetsDataUrlsToUpload = tweetData ? getMediaUrlsToUpload(tweetData) : [];
+        //TODO: Issue 52: https://github.com/orgs/NotarizedScreenshot/projects/1/views/1?pane=issue&itemId=27498718\
+        //Add handling tombstone tweet
 
-      const mediaUrls = Array.from(new Set([...tweetsDataUrlsToUpload]));
+        const mediaUrls = Array.from(new Set([...tweetsDataUrlsToUpload]));
 
-      const uploadJob = await uploadQueue.add({
-        tweetId,
-        userId,
-        metadata: fetchedData.metadata,
-        tweetdata: fetchedData.tweetdata,
-        screenshotImageBuffer,
-        stampedImageBuffer,
-        mediaUrls,
-      });
+        const uploadJob = await uploadQueue.add({
+          tweetId,
+          userId,
+          metadata: fetchedData.metadata,
+          tweetdata: fetchedData.tweetdata,
+          screenshotImageBuffer,
+          stampedImageBuffer,
+          mediaUrls,
+        });
+      }
     }
 
     await browser.close();
 
     console.log('browser closed');
 
-    console.log('response data: ', responseData);
+    // console.log('response data: ', responseData);
 
     response.set('Content-Type', 'application/json');
     return response.status(200).send({ ...responseData });
