@@ -334,6 +334,8 @@ const getScreenshotWithPuppeteer = async (
     const stampedImageUrl = makeImageBase64UrlfromBuffer(stampedImageBuffer);
     const responseData: IGetScreenshotResponseData = { ...fetchedData, imageUrl: stampedImageUrl };
 
+    if (!responseData.tweetdata) console.log('no response data');
+
     if (responseData.tweetdata) {
       const tweetEntry: ITweetTimelineEntry = getTweetTimelineEntries(responseData.tweetdata).find(
         (entry) => entry.entryId === `tweet-${tweetId}`,
@@ -359,6 +361,10 @@ const getScreenshotWithPuppeteer = async (
     }
 
     await browser.close();
+
+    console.log('browser closed');
+
+    console.log('response data: ', responseData);
 
     response.set('Content-Type', 'application/json');
     return response.status(200).send({ ...responseData });
