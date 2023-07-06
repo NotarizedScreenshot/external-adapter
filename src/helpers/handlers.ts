@@ -3,6 +3,8 @@ import path from 'path';
 import {
   getDnsInfo,
   getMediaUrlsToUpload,
+  getSocketByUserId,
+  getTweetResults,
   getTweetTimelineEntries,
   isValidUint64,
   makeImageBase64UrlfromBuffer,
@@ -100,16 +102,12 @@ export const getTweetDataPromise = (page: Page, tweetId: string) =>
 
       const headers = puppeteerResponse.headers();
 
-      console.log(
-        `getTweetDataPromise, tweet id: ${tweetId}, match: ${responseUrl.match(
-          /TweetDetail/g,
-        )} responseUrl: ${responseUrl}`,
-      );
 
       if (
-        (responseUrl.match(/TweetDetail/g) || responseUrl.match(/TweetResultByRestId/g)) &&
-        headers['content-type'] &&
-        headers['content-type'].includes('application/json')
+        responseUrl.match(/TweetDetail/g) ||
+        (responseUrl.match(/TweetResultByRestId/g) &&
+          headers['content-type'] &&
+          headers['content-type'].includes('application/json'))
       ) {
         console.log(
           `//////////////////////////// getTweetDataPromise, tweet id: ${tweetId}, match: ${responseUrl.match(
@@ -257,6 +255,7 @@ export const screenshotWithPuppeteer = async (
   try {
     return getScreenshotWithPuppeteer(request, response);
   } catch (error) {
+    console.log('screenshotWithPuppeteer error: ', error);
     return response
       .status(502)
       .json({ error: `screenshotWithPuppeteer controller error:  ${error}` });
@@ -334,63 +333,52 @@ const getScreenshotWithPuppeteer = async (
     const stampedImageUrl = makeImageBase64UrlfromBuffer(stampedImageBuffer);
     const responseData: IGetScreenshotResponseData = { ...fetchedData, imageUrl: stampedImageUrl };
 
-    if (!responseData.tweetdata) console.log('no response data');
+    if (!responseData.tweetdata || !responseData.metadata || !responseData.imageUrl) {
+      const socket = getSocketByUserId(userId);
 
-    if (responseData.tweetdata) {
-      const tweetRawDataParsed = JSON.parse(responseData.tweetdata);
-      if (tweetRawDataParsed.data.tweetResult.result) {
-        const tweetData = createTweetData(tweetRawDataParsed.data.tweetResult.result);
-        const tweetsDataUrlsToUpload = tweetData ? getMediaUrlsToUpload(tweetData) : [];
-        const mediaUrls = Array.from(new Set([...tweetsDataUrlsToUpload]));
+      const responseDataKeys = Object.keys(responseData) as (keyof IGetScreenshotResponseData)[];
+      const falsyResponseData = responseDataKeys.reduce<{
+        metadata?: IGetScreenshotResponseData['metadata'];
+        tweetdata?: IGetScreenshotResponseData['tweetdata'];
+        imageUrl?: IGetScreenshotResponseData['imageUrl'];
+      }>((acc, val) => {
+        if (!responseData[val]) acc[val] = null;
+        return acc;
+      }, {});
 
-        const uploadJob = await uploadQueue.add({
-          tweetId,
-          userId,
-          metadata: fetchedData.metadata,
-          tweetdata: fetchedData.tweetdata,
-          screenshotImageBuffer,
-          stampedImageBuffer,
-          mediaUrls,
-        });
+      if (!!socket) socket.emit('uploadRejected', JSON.stringify(falsyResponseData));
+    } else {
+      const tweetEntrys: ITweetTimelineEntry[] = getTweetTimelineEntries(responseData.tweetdata);
+      const tweetEntry = tweetEntrys.find((entry) => entry.entryId === `tweet-${tweetId}`)!;
 
+      const tweetResults = tweetEntry
+        ? getTweetResults(tweetEntry)
+        : getTweetResults(JSON.parse(responseData.tweetdata));
 
-      }
-      const tweetEntry: ITweetTimelineEntry = getTweetTimelineEntries(
-        'responseData.tweetdata',
-      ).find((entry) => entry.entryId === `tweet-${tweetId}`)!;
-      console.log('tweetEntry', tweetEntry);
+      const tweetData = createTweetData(tweetResults);
 
-      if (tweetEntry?.content) {
-        const tweetData = createTweetData(tweetEntry.content.itemContent.tweet_results.result);
+      const tweetsDataUrlsToUpload = tweetData ? getMediaUrlsToUpload(tweetData) : [];
+      //TODO: Issue 52: https://github.com/orgs/NotarizedScreenshot/projects/1/views/1?pane=issue&itemId=27498718\
+      //Add handling tombstone tweet
 
-        const tweetsDataUrlsToUpload = tweetData ? getMediaUrlsToUpload(tweetData) : [];
-        //TODO: Issue 52: https://github.com/orgs/NotarizedScreenshot/projects/1/views/1?pane=issue&itemId=27498718\
-        //Add handling tombstone tweet
-
-        const mediaUrls = Array.from(new Set([...tweetsDataUrlsToUpload]));
-
-        const uploadJob = await uploadQueue.add({
-          tweetId,
-          userId,
-          metadata: fetchedData.metadata,
-          tweetdata: fetchedData.tweetdata,
-          screenshotImageBuffer,
-          stampedImageBuffer,
-          mediaUrls,
-        });
-      }
+      const mediaUrls = Array.from(new Set([...tweetsDataUrlsToUpload]));
+      const uploadJob = await uploadQueue.add({
+        tweetId,
+        userId,
+        metadata: fetchedData.metadata,
+        tweetdata: fetchedData.tweetdata,
+        screenshotImageBuffer,
+        stampedImageBuffer,
+        mediaUrls,
+      });
     }
 
     await browser.close();
 
-    console.log('browser closed');
-
-    // console.log('response data: ', responseData);
-
     response.set('Content-Type', 'application/json');
     return response.status(200).send({ ...responseData });
   } catch (error: any) {
-    console.log(error.message);
+    console.log('getScreenshotWithPuppeteer', error);
     return response.status(500).send({ error: error.message });
   }
 };
