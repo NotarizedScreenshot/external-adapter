@@ -100,7 +100,11 @@ export const getTweetDataPromise = (page: Page, tweetId: string) =>
 
       const headers = puppeteerResponse.headers();
 
-      
+      console.log(
+        `getTweetDataPromise, tweet id: ${tweetId}, match: ${responseUrl.match(
+          /TweetDetail/g,
+        )} responseUrl: ${responseUrl}`,
+      );
 
       if (
         responseUrl.match(/TweetDetail/g) &&
@@ -108,7 +112,7 @@ export const getTweetDataPromise = (page: Page, tweetId: string) =>
         headers['content-type'].includes('application/json')
       ) {
         console.log(
-          `getTweetDataPromise, tweet id: ${tweetId}, match: ${responseUrl.match(
+          `//////////////////////////// getTweetDataPromise, tweet id: ${tweetId}, match: ${responseUrl.match(
             /TweetDetail/g,
           )} responseUrl: ${responseUrl}`,
         );
@@ -119,7 +123,8 @@ export const getTweetDataPromise = (page: Page, tweetId: string) =>
           console.log('getTweetDataPromise error:', error.message);
         }
       }
-      setTimeout(() => reject(`failed to get tweet ${tweetId} tweet data`), DEFAULT_TIMEOUT_MS);
+      setTimeout(() => reject(`failed to get tweet ${tweetId} tweet data`), 120000);
+      // setTimeout(() => reject(`failed to get tweet ${tweetId} tweet data`), DEFAULT_TIMEOUT_MS);
     });
   });
 
