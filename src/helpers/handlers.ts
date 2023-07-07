@@ -1,8 +1,11 @@
 import fs from 'fs/promises';
 import path from 'path';
 import {
+  findElementByTextContentAsync,
+  getBoundingBox,
   getDnsInfo,
   getMediaUrlsToUpload,
+  getSavedCookies,
   getSocketByUserId,
   getTweetResults,
   getTweetTimelineEntries,
@@ -10,6 +13,7 @@ import {
   makeImageBase64UrlfromBuffer,
   makeTweetUrlWithId,
   trimUrl,
+  waitForSelectorWithTimeout,
 } from '../helpers';
 import puppeteer, { Browser, ElementHandle, HTTPResponse, Page } from 'puppeteer';
 import { IGetScreenshotResponseData, IMetadata, ITweetTimelineEntry } from '../types';
@@ -26,52 +30,6 @@ import { makeBufferFromBase64ImageUrl, makeStampedImage } from './images';
 import { createTweetData } from '../models';
 import { uploadQueue } from '../queue';
 import { processPWD } from '../prestart';
-
-export const getBoundingBox = async (element: ElementHandle | null) => {
-  if (!!element) {
-    const elementBoundingBox = await element.boundingBox();
-    return elementBoundingBox ? elementBoundingBox : puppeteerDefaultConfig.defaultBoundingBox;
-  }
-  return puppeteerDefaultConfig.defaultBoundingBox;
-};
-
-export const getSavedCookies = (): Promise<
-  { name: string; value: string; [id: string]: string | number | boolean }[] | null
-> =>
-  fs
-    .readFile(path.resolve(processPWD, 'data', 'cookies.json'), 'utf-8')
-    .then((cockiesString) => JSON.parse(cockiesString))
-    .catch((error) => {
-      console.error(error.message);
-      return null;
-    });
-
-export const findElementByTextContentAsync = async (
-  elements: ElementHandle[],
-  textValue: string,
-): Promise<ElementHandle | null> => {
-  for (let i = 0; i < elements.length; i += 1) {
-    const property = await elements[i].getProperty('textContent');
-    const value = await property.jsonValue();
-    if (value?.toLocaleLowerCase() === textValue.toLocaleLowerCase()) return elements[i];
-  }
-  return null;
-};
-
-export const waitForSelectorWithTimeout = async (
-  page: Page,
-  selector: string,
-  timeout: number = 5000,
-): Promise<ElementHandle | null> => {
-  try {
-    return await page.waitForSelector(selector, {
-      timeout,
-    });
-  } catch (error) {
-    console.log(`Can not get selector: ${selector}, exceed timeout ${timeout} ms`);
-    return null;
-  }
-};
 
 export const getMetaDataPromise = (page: Page, tweetId: string) =>
   new Promise<string>((resolve, reject) => {
@@ -108,11 +66,7 @@ export const getTweetDataPromise = (page: Page, tweetId: string) =>
           headers['content-type'] &&
           headers['content-type'].includes('application/json'))
       ) {
-        console.log(
-          `//////////////////////////// getTweetDataPromise, tweet id: ${tweetId}, match: ${responseUrl.match(
-            /TweetDetail/g,
-          )} responseUrl: ${responseUrl}`,
-        );
+        console.log('getTweetDataPromise: caught response, response url: ', responseUrl);
         try {
           const responseData = await puppeteerResponse.text();
           resolve(responseData);
@@ -120,8 +74,13 @@ export const getTweetDataPromise = (page: Page, tweetId: string) =>
           console.log('getTweetDataPromise error:', error.message);
         }
       }
-      // setTimeout(() => reject(`failed to get tweet ${tweetId} tweet data`), 120000);
-      setTimeout(() => reject(`failed to get tweet ${tweetId} tweet data`), DEFAULT_TIMEOUT_MS);
+      setTimeout(
+        () =>
+          reject(
+            `failed to get tweet ${tweetId} tweet data, did not caught tweet data response within timeout`,
+          ),
+        DEFAULT_TIMEOUT_MS,
+      );
     });
   });
 
@@ -139,6 +98,7 @@ export const screenshotPromise = async (page: Page, tweetId: string) => {
 
       console.log('process.env.TWITTER_PASSWORD', process.env.TWITTER_PASSWORD);
       console.log('process.env.TWITTER_USERNAME', process.env.TWITTER_USERNAME);
+      console.log('process.env.TWITTER_EMAIL', process.env.TWITTER_EMAIL);
 
       if (!process.env.TWITTER_USERNAME) {
         console.log(`Twitter username is falsy: '${process.env.TWITTER_USERNAME}'`);
@@ -191,7 +151,7 @@ export const screenshotPromise = async (page: Page, tweetId: string) => {
       await logInButton.click();
 
       const articleElement = await waitForSelectorWithTimeout(page, `article`);
-      console.log(articleElement);
+
       if (!articleElement) {
         const label = await waitForSelectorWithTimeout(page, 'label');
         const labelTextContent = await (await label?.getProperty('textContent'))?.jsonValue();
@@ -211,7 +171,6 @@ export const screenshotPromise = async (page: Page, tweetId: string) => {
           await emailPageNextButton!.click();
         }
       }
-      // const articleElement2 = await waitForSelectorWithTimeout(page, `article`);
 
       const coockies = await page.cookies();
       fs.writeFile(path.resolve(processPWD, 'data', 'cookies.json'), JSON.stringify(coockies));
@@ -415,11 +374,7 @@ const getScreenshotWithPuppeteer = async (
 
 async function getBrowser(): Promise<Browser> {
   const chromeHost = process.env.CHROME_HOST;
-  const browser = await puppeteer.connect({ browserWSEndpoint: `ws://${chromeHost}:3000` });
-  // const browser = await puppeteer.launch({
-  //   args: puppeteerDefaultConfig.launch.args,
-  //   headless: false,
-  // });
+  const browser = await puppeteer.connect({ browserWSEndpoint: `ws://${chromeHost}:3000` });  
   console.log('browser', browser);
   return browser;
 }

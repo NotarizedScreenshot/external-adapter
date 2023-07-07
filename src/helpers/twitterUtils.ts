@@ -1,17 +1,22 @@
+import { ElementHandle } from 'puppeteer';
 import { createTweetData } from '../models';
 import { IThreadData, IThreadEntry, ITweetData, ITweetTimelineEntry } from 'types';
+import { puppeteerDefaultConfig } from '../config';
+
+export const getBoundingBox = async (element: ElementHandle | null) => {
+  if (!!element) {
+    const elementBoundingBox = await element.boundingBox();
+    return elementBoundingBox ? elementBoundingBox : puppeteerDefaultConfig.defaultBoundingBox;
+  }
+  return puppeteerDefaultConfig.defaultBoundingBox;
+};
 
 export const getTweetResults = (tweetData: any) => {
-  console.log('getTweetResults data', tweetData);
-  console.log('getTweetResults data.tweetResult', tweetData.data?.tweetResult);
-
   try {
     switch (true) {
-      case !!tweetData.content?.itemContent?.tweet_results?.result:
-        console.log('data.contetnt', tweetData.content?.itemContent?.tweet_results?.result);
+      case !!tweetData.content?.itemContent?.tweet_results?.result:        
         return tweetData.content.itemContent.tweet_results.result;
       case !!tweetData.data.tweetResult?.result:
-        console.log('data.tweetResult', tweetData.data.tweetResult?.result);
         return tweetData.data.tweetResult.result;
       default:
         throw new Error(`can not get tweet results, data: ${JSON.stringify(tweetData)}`);

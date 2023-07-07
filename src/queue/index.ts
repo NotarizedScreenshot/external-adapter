@@ -12,7 +12,8 @@ import { createMoment, createNftDescription, createNftName, createTweetData } fr
 const REDIS_DEFAULT_PORT = 6379;
 const REDIS_DEFAULT_HOST = 'redis';
 
-const redis = `redis://${process.env.REDIS_HOST ? process.env.REDIS_HOST : REDIS_DEFAULT_HOST}:${
+const redis = `redis://${
+  process.env.REDIS_HOST ? process.env.REDIS_HOST : REDIS_DEFAULT_HOST}:${
   process.env.REDIS_PORT ? process.env.REDIS_PORT : REDIS_DEFAULT_PORT
 }`;
 

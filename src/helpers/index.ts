@@ -1,3 +1,5 @@
+import path from 'path';
+import fs from 'fs/promises';
 import { spawn } from 'child_process';
 import {
   IMetadata,
@@ -14,6 +16,8 @@ import { Response } from 'express';
 import { createTweetData } from '../models';
 import { io } from '../index';
 import { Socket } from 'socket.io';
+import { processPWD } from '../prestart';
+import { ElementHandle, Page } from 'puppeteer';
 
 export const getIncludeSubstringElementIndex = (
   array: string[],
@@ -163,5 +167,43 @@ export const getSocketByUserId = (userId: string): Socket | null => {
 
 export const randomInt = (min: number, max: number): number =>
   Math.floor(Math.random() * (max - min + 1) + min);
+
+export const getSavedCookies = (): Promise<
+  { name: string; value: string; [id: string]: string | number | boolean }[] | null
+> =>
+  fs
+    .readFile(path.resolve(processPWD, 'data', 'cookies.json'), 'utf-8')
+    .then((cockiesString) => JSON.parse(cockiesString))
+    .catch((error) => {
+      console.error(error.message);
+      return null;
+    });
+
+export const findElementByTextContentAsync = async (
+  elements: ElementHandle[],
+  textValue: string,
+): Promise<ElementHandle | null> => {
+  for (let i = 0; i < elements.length; i += 1) {
+    const property = await elements[i].getProperty('textContent');
+    const value = await property.jsonValue();
+    if (value?.toLocaleLowerCase() === textValue.toLocaleLowerCase()) return elements[i];
+  }
+  return null;
+};
+
+export const waitForSelectorWithTimeout = async (
+  page: Page,
+  selector: string,
+  timeout: number = 5000,
+): Promise<ElementHandle | null> => {
+  try {
+    return await page.waitForSelector(selector, {
+      timeout,
+    });
+  } catch (error) {
+    console.log(`Can not get selector: ${selector}, exceed timeout ${timeout} ms`);
+    return null;
+  }
+};
 
 export * from './twitterUtils';
