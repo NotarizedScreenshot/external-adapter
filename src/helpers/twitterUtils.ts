@@ -4,7 +4,7 @@ import { IThreadData, IThreadEntry, ITweetData, ITweetTimelineEntry } from 'type
 export const getTweetResults = (data: any) => {
   try {
     switch (true) {
-      case !!data.content.itemContent.tweet_results.result:
+      case !!data.content?.itemContent?.tweet_results?.result:
         return data.content.itemContent.tweet_results.result;
       case !!data.tweetResult.result:
         return data.tweetResult.result;
@@ -109,4 +109,3 @@ export const getTweetResultsFromTweetRawData = (tweetRawDataString: string, twee
 
 export const makeTweetUrlWithId = (tweetId: string): string =>
   `https://twitter.com/twitter/status/${tweetId}`;
-
