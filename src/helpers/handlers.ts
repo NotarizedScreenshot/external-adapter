@@ -102,7 +102,6 @@ export const getTweetDataPromise = (page: Page, tweetId: string) =>
 
       const headers = puppeteerResponse.headers();
 
-
       if (
         responseUrl.match(/TweetDetail/g) ||
         (responseUrl.match(/TweetResultByRestId/g) &&
@@ -135,44 +134,49 @@ export const screenshotPromise = async (page: Page, tweetId: string) => {
         'https://twitter.com/i/flow/login',
         puppeteerDefaultConfig.page.goto.gotoWaitUntilIdle,
       );
+
       await page.waitForSelector('input');
-      console.log(process.env.TWITTER_PASSWORD);
-      console.log(process.env.TWITTER_USERNAME);
+
+      console.log('process.env.TWITTER_PASSWORD', process.env.TWITTER_PASSWORD);
+      console.log('process.env.TWITTER_USERNAME', process.env.TWITTER_USERNAME);
+
       if (!process.env.TWITTER_USERNAME) {
         console.log(`Twitter username is falsy: '${process.env.TWITTER_USERNAME}'`);
         return null;
       }
+
       await page.type('input', process.env.TWITTER_USERNAME);
 
       const loginPageButtons = await page.$$('[role="button"]');
 
-      const nextButton = await findElementByTextContentAsync(
+      const loginPgaeNextButton = await findElementByTextContentAsync(
         loginPageButtons,
         TWITTER_NEXT_BUTTON_TEXT_CONTENT,
       );
 
       // console.log(nextButton);
-      if (!nextButton) {
+      if (!loginPgaeNextButton) {
         console.log(
           `Twitter Log in page error: can not get button '${TWITTER_NEXT_BUTTON_TEXT_CONTENT}'`,
         );
         return null;
       }
 
-      await nextButton.click();
-      console.log('click');
+      await loginPgaeNextButton.click();
+
       await page.waitForSelector('input');
 
       if (!process.env.TWITTER_PASSWORD) {
         console.log(`Twitter password is falsy: '${process.env.TWITTER_PASSWORD}'`);
         return null;
       }
+
       await page.type('input', process.env.TWITTER_PASSWORD);
 
-      const buttons2 = await page.$$('[role="button"]');
+      const passwordPageButtons = await page.$$('[role="button"]');
 
       const logInButton = await findElementByTextContentAsync(
-        buttons2,
+        passwordPageButtons,
         TWITTER_LOGIN_BUTTON_TEXT_CONTENT,
       );
 
@@ -189,20 +193,22 @@ export const screenshotPromise = async (page: Page, tweetId: string) => {
       const articleElement = await waitForSelectorWithTimeout(page, `article`);
       console.log(articleElement);
       if (!articleElement) {
-        // console.log('shitta fuckka');
-        // const screenshotImageBuffer: Buffer = await page.screenshot();
-        // return makeImageBase64UrlfromBuffer(screenshotImageBuffer);
-        console.log('no article');
-        await page.type('input', 's38fn7z8');
-        const loginPageButtons = await page.$$('[role="button"]');
+        const label = await waitForSelectorWithTimeout(page, 'label');
+        const labelTextContent = await (await label?.getProperty('textContent'))?.jsonValue();
+        if (labelTextContent?.toLowerCase().includes('email')) {
+          await page.type('input', 'rtk.prc.head@gmail.com');
+          const emailPageButtons = await page.$$('[role="button"]');
 
-        const nextButton = await findElementByTextContentAsync(
-          loginPageButtons,
-          TWITTER_NEXT_BUTTON_TEXT_CONTENT,
-        );
+          const emailPageNextButton = await findElementByTextContentAsync(
+            loginPageButtons,
+            TWITTER_NEXT_BUTTON_TEXT_CONTENT,
+          );
 
-        await nextButton!.click();
+          await emailPageNextButton!.click();
+        }
       }
+      // const articleElement2 = await waitForSelectorWithTimeout(page, `article`);
+
       const coockies = await page.cookies();
       fs.writeFile(path.resolve(processPWD, 'data', 'cookies.json'), JSON.stringify(coockies));
     } else {
@@ -219,7 +225,6 @@ export const screenshotPromise = async (page: Page, tweetId: string) => {
       page,
       `article:has(a[href$="/status/${tweetId}"])`,
     );
-    console.log('articleElement', articleElement);
     const articleBoundingBox = await getBoundingBox(articleElement);
     articleBoundingBox.y -= mailboundingBox.y;
 
@@ -239,6 +244,7 @@ export const screenshotPromise = async (page: Page, tweetId: string) => {
 
     const screenshotImageBuffer: Buffer = await page.screenshot({
       clip: { ...articleBoundingBox },
+      path: 'screenshot.png',
     });
 
     return makeImageBase64UrlfromBuffer(screenshotImageBuffer);
@@ -278,6 +284,7 @@ const getScreenshotWithPuppeteer = async (
     if (!isValidUint64(tweetId)) {
       return reportError('invalid tweeetId', response);
     }
+
     if (!!activeJob) {
       const { stampedImageBuffer, metadata, tweetdata } = activeJob.data;
 
@@ -292,13 +299,13 @@ const getScreenshotWithPuppeteer = async (
 
     const tweetUrl = makeTweetUrlWithId(tweetId);
 
-    console.log('tweetUrl: ', tweetUrl);
+    console.log('getScreenshotWithPuppeteer tweetUrl: ', tweetUrl);
 
     const browser = await getBrowser();
 
     const page = await browser.newPage();
 
-    console.log('page', page);
+    console.log('getScreenshotWithPuppeteer page', page);
 
     await page.setViewport({
       ...puppeteerDefaultConfig.viewport,
@@ -325,8 +332,6 @@ const getScreenshotWithPuppeteer = async (
       },
     );
 
-    console.log('fetched', fetchedData);
-
     const screenshotImageUrl = fetchedData.imageUrl;
     const screenshotImageBuffer = makeBufferFromBase64ImageUrl(screenshotImageUrl);
     const stampedImageBuffer = await makeStampedImage(screenshotImageUrl);
@@ -351,9 +356,17 @@ const getScreenshotWithPuppeteer = async (
       const tweetEntrys: ITweetTimelineEntry[] = getTweetTimelineEntries(responseData.tweetdata);
       const tweetEntry = tweetEntrys.find((entry) => entry.entryId === `tweet-${tweetId}`)!;
 
+      console.log('getScreenshotWithPuppeteer get tweetEntries: tweetEntry = ', tweetEntry);
+      if (!tweetEntry)
+        console.log(
+          'getScreenshotWithPuppeteer tweetEntry is falsy, try to parse responseData.tweetdata',
+        );
+
       const tweetResults = tweetEntry
         ? getTweetResults(tweetEntry)
         : getTweetResults(JSON.parse(responseData.tweetdata));
+
+      console.log('getScreenshotWithPuppeteer tweetResults = ', tweetResults);
 
       const tweetData = createTweetData(tweetResults);
 
