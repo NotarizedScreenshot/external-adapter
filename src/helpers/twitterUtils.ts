@@ -1,21 +1,20 @@
 import { createTweetData } from '../models';
 import { IThreadData, IThreadEntry, ITweetData, ITweetTimelineEntry } from 'types';
 
-export const getTweetResults = (data: any) => {
-  console.log('getTweetResults data', data);
-  console.log('getTweetResults data.tweetResult', data.tweetResult);
-  console.log('getTweetResults data', data?.tweetResult);
+export const getTweetResults = (tweetData: any) => {
+  console.log('getTweetResults data', tweetData);
+  console.log('getTweetResults data.tweetResult', tweetData.data.tweetResult);
 
   try {
     switch (true) {
-      case !!data.content?.itemContent?.tweet_results?.result:
-        console.log('data.contetnt', data.content?.itemContent?.tweet_results?.result);
-        return data.content.itemContent.tweet_results.result;
-      case !!data.tweetResult?.result:
-        console.log('data.tweetResult', data.tweetResult?.result);
-        return data.tweetResult.result;
+      case !!tweetData.content?.itemContent?.tweet_results?.result:
+        console.log('data.contetnt', tweetData.content?.itemContent?.tweet_results?.result);
+        return tweetData.content.itemContent.tweet_results.result;
+      case !!tweetData.data.tweetResult?.result:
+        console.log('data.tweetResult', tweetData.data.tweetResult?.result);
+        return tweetData.data.tweetResult.result;
       default:
-        throw new Error(`can not get tweet results, data: ${JSON.stringify(data)}`);
+        throw new Error(`can not get tweet results, data: ${JSON.stringify(tweetData)}`);
     }
   } catch (error: any) {
     console.error('getTweetResults error: ', error);
