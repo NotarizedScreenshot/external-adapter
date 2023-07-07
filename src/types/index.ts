@@ -128,6 +128,7 @@ export interface IUploadJobData {
   screenshotImageBuffer: Buffer | null;
   stampedImageBuffer: Buffer | null;
   mediaUrls: string[];
+  parsedTweetData: ITweetData | null;
 }
 
 export interface IMoment {

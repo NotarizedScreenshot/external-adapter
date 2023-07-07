@@ -3,7 +3,7 @@ import { IThreadData, IThreadEntry, ITweetData, ITweetTimelineEntry } from 'type
 
 export const getTweetResults = (tweetData: any) => {
   console.log('getTweetResults data', tweetData);
-  console.log('getTweetResults data.tweetResult', tweetData.data.tweetResult);
+  console.log('getTweetResults data.tweetResult', tweetData.data?.tweetResult);
 
   try {
     switch (true) {

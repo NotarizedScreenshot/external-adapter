@@ -332,16 +332,10 @@ const getScreenshotWithPuppeteer = async (
       },
     );
 
-    const screenshotImageUrl = fetchedData.imageUrl;
-    const screenshotImageBuffer = makeBufferFromBase64ImageUrl(screenshotImageUrl);
-    const stampedImageBuffer = await makeStampedImage(screenshotImageUrl);
-    const stampedImageUrl = makeImageBase64UrlfromBuffer(stampedImageBuffer);
-    const responseData: IGetScreenshotResponseData = { ...fetchedData, imageUrl: stampedImageUrl };
-
-    if (!responseData.tweetdata || !responseData.metadata || !responseData.imageUrl) {
+    if (!fetchedData.tweetdata || !fetchedData.metadata || !fetchedData.imageUrl) {
       const socket = getSocketByUserId(userId);
 
-      const responseDataKeys = Object.keys(responseData) as (keyof IGetScreenshotResponseData)[];
+      const responseDataKeys = Object.keys(fetchedData) as (keyof IGetScreenshotResponseData)[];
       const falsyResponseData = responseDataKeys.reduce<{
         metadata?: IGetScreenshotResponseData['metadata'];
         tweetdata?: IGetScreenshotResponseData['tweetdata'];
@@ -352,43 +346,60 @@ const getScreenshotWithPuppeteer = async (
       }, {});
 
       if (!!socket) socket.emit('uploadRejected', JSON.stringify(falsyResponseData));
-    } else {
-      const tweetEntrys: ITweetTimelineEntry[] = getTweetTimelineEntries(responseData.tweetdata);
-      const tweetEntry = tweetEntrys.find((entry) => entry.entryId === `tweet-${tweetId}`)!;
-
-      console.log('getScreenshotWithPuppeteer get tweetEntries: tweetEntry = ', tweetEntry);
-      if (!tweetEntry)
-        console.log(
-          'getScreenshotWithPuppeteer tweetEntry is falsy, try to parse responseData.tweetdata',
-        );
-
-      console.log('getScreenshotWithPuppeteer responseData.tweetdata', responseData.tweetdata);
-
-      const tweetResults = tweetEntry
-        ? getTweetResults(tweetEntry)
-        : getTweetResults(JSON.parse(responseData.tweetdata));
-
-      console.log('getScreenshotWithPuppeteer tweetResults = ', tweetResults);
-
-      const tweetData = createTweetData(tweetResults);
-
-      const tweetsDataUrlsToUpload = tweetData ? getMediaUrlsToUpload(tweetData) : [];
-      //TODO: Issue 52: https://github.com/orgs/NotarizedScreenshot/projects/1/views/1?pane=issue&itemId=27498718\
-      //Add handling tombstone tweet
-
-      const mediaUrls = Array.from(new Set([...tweetsDataUrlsToUpload]));
-      const uploadJob = await uploadQueue.add({
-        tweetId,
-        userId,
-        metadata: fetchedData.metadata,
-        tweetdata: fetchedData.tweetdata,
-        screenshotImageBuffer,
-        stampedImageBuffer,
-        mediaUrls,
+      return response.status(500).send({
+        error: `fetching data error: ${JSON.stringify(falsyResponseData)}`,
+        data: fetchedData,
       });
     }
 
+    const screenshotImageUrl = fetchedData.imageUrl;
+    const screenshotImageBuffer = makeBufferFromBase64ImageUrl(screenshotImageUrl);
+    const stampedImageBuffer = await makeStampedImage(screenshotImageUrl);
+    const stampedImageUrl = makeImageBase64UrlfromBuffer(stampedImageBuffer);
+
+    const tweetEntrys: ITweetTimelineEntry[] = getTweetTimelineEntries(fetchedData.tweetdata);
+    const tweetEntry = tweetEntrys.find((entry) => entry.entryId === `tweet-${tweetId}`)!;
+
+    console.log('getScreenshotWithPuppeteer get tweetEntries: tweetEntry = ', tweetEntry);
+    if (!tweetEntry)
+      console.log(
+        'getScreenshotWithPuppeteer tweetEntry is falsy, try to parse responseData.tweetdata',
+      );
+
+    console.log('getScreenshotWithPuppeteer responseData.tweetdata', fetchedData.tweetdata);
+
+    const tweetResults = tweetEntry
+      ? getTweetResults(tweetEntry)
+      : getTweetResults(JSON.parse(fetchedData.tweetdata!));
+
+    console.log('getScreenshotWithPuppeteer tweetResults = ', tweetResults);
+
+    const parsedTweetData = createTweetData(tweetResults);
+
+    const tweetsDataUrlsToUpload = parsedTweetData ? getMediaUrlsToUpload(parsedTweetData) : [];
+    //TODO: Issue 52: https://github.com/orgs/NotarizedScreenshot/projects/1/views/1?pane=issue&itemId=27498718\
+    //Add handling tombstone tweet
+
+    const mediaUrls = Array.from(new Set([...tweetsDataUrlsToUpload]));
+    const uploadJob = await uploadQueue.add({
+      tweetId,
+      userId,
+      metadata: fetchedData.metadata,
+      tweetdata: fetchedData.tweetdata,
+      screenshotImageBuffer,
+      stampedImageBuffer,
+      mediaUrls,
+      parsedTweetData,
+    });
+
     await browser.close();
+
+    const responseData = {
+      imageUrl: stampedImageUrl,
+      metadata: fetchedData.metadata,
+      tweetdata: fetchedData.tweetdata,
+      parsedTweetData,
+    };
 
     response.set('Content-Type', 'application/json');
     return response.status(200).send({ ...responseData });
