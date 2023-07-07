@@ -196,11 +196,15 @@ export const screenshotPromise = async (page: Page, tweetId: string) => {
         const label = await waitForSelectorWithTimeout(page, 'label');
         const labelTextContent = await (await label?.getProperty('textContent'))?.jsonValue();
         if (labelTextContent?.toLowerCase().includes('email')) {
-          await page.type('input', 'rtk.prc.head@gmail.com');
+          if (!process.env.TWITTER_EMAIL) {
+            console.log(`Twitter email is falsy: '${process.env.TWITTER_EMAIL}'`);
+            return null;
+          }
+          await page.type('input', process.env.TWITTER_EMAIL);
           const emailPageButtons = await page.$$('[role="button"]');
 
           const emailPageNextButton = await findElementByTextContentAsync(
-            loginPageButtons,
+            emailPageButtons,
             TWITTER_NEXT_BUTTON_TEXT_CONTENT,
           );
 
