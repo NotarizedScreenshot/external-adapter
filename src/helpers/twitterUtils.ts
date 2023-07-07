@@ -2,11 +2,14 @@ import { createTweetData } from '../models';
 import { IThreadData, IThreadEntry, ITweetData, ITweetTimelineEntry } from 'types';
 
 export const getTweetResults = (data: any) => {
+  console.log('getTweetResults', data);
   try {
     switch (true) {
       case !!data.content?.itemContent?.tweet_results?.result:
+        console.log('data.contetnt', data.content?.itemContent?.tweet_results?.result);
         return data.content.itemContent.tweet_results.result;
       case !!data.tweetResult.result:
+        console.log('data.tweetResult', data.tweetResult.result);
         return data.tweetResult.result;
       default:
         throw new Error(`can not get tweet results, data: ${JSON.stringify(data)}`);

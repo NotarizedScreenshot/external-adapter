@@ -362,6 +362,8 @@ const getScreenshotWithPuppeteer = async (
           'getScreenshotWithPuppeteer tweetEntry is falsy, try to parse responseData.tweetdata',
         );
 
+      console.log('getScreenshotWithPuppeteer responseData.tweetdata', responseData.tweetdata);
+
       const tweetResults = tweetEntry
         ? getTweetResults(tweetEntry)
         : getTweetResults(JSON.parse(responseData.tweetdata));
