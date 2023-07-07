@@ -24,13 +24,17 @@ export const makeStampedImage = async (srcImgPath: string | Buffer | null) => {
       path.resolve(processPWD, 'public', WATERMARK_IMAGE_PATH),
     );
 
-    ctx.drawImage(screenshotImage, 0, 0);
     ctx.drawImage(
-      watermarkImage,
-      screenshotImage.width - WATERMARK_DEFAULT_WIDTH,
-      0,
-      WATERMARK_DEFAULT_WIDTH,
-      WATERMARK_DEFAULT_HEIGHT,
+        screenshotImage,
+        0,
+        0
+    );
+    ctx.drawImage(
+        watermarkImage,
+        screenshotImage.width - WATERMARK_DEFAULT_WIDTH,
+        0,
+        WATERMARK_DEFAULT_WIDTH,
+        WATERMARK_DEFAULT_HEIGHT,
     );
 
     return canvas.toBuffer('image/png');
