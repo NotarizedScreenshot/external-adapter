@@ -175,7 +175,7 @@ export const getSavedCookies = (): Promise<
     .readFile(path.resolve(processPWD, 'data', 'cookies.json'), 'utf-8')
     .then((cockiesString) => JSON.parse(cockiesString))
     .catch((error) => {
-      console.error(error.message);
+      console.error('getSavedCookies error: ', error.message);
       return null;
     });
 
