@@ -76,6 +76,10 @@ export interface IGetScreenshotResponseData {
   tweetdata: string | null;
 }
 
+export interface IResponseData extends IGetScreenshotResponseData {
+  parsedTweetData: ITweetData | null;
+}
+
 export type ITweetPageMetaData = [IMetadata | null, ITweetRawData | null];
 
 export interface ITweetTimelineEntry {

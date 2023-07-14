@@ -16,7 +16,13 @@ import {
   waitForSelectorWithTimeout,
 } from '../helpers';
 import puppeteer, { Browser, ElementHandle, HTTPResponse, Page } from 'puppeteer';
-import { IGetScreenshotResponseData, IMetadata, ITweetTimelineEntry } from '../types';
+import {
+  IGetScreenshotResponseData,
+  IMetadata,
+  IResponseData,
+  ITweetData,
+  ITweetTimelineEntry,
+} from '../types';
 import {
   DEFAULT_TIMEOUT_MS,
   TWITTER_LOGIN_BUTTON_TEXT_CONTENT,
@@ -249,12 +255,13 @@ const getScreenshotWithPuppeteer = async (
     }
 
     if (!!activeJob) {
-      const { stampedImageBuffer, metadata, tweetdata } = activeJob.data;
+      const { stampedImageBuffer, metadata, tweetdata, parsedTweetData } = activeJob.data;
 
-      const responseData: IGetScreenshotResponseData = {
+      const responseData: IResponseData = {
         imageUrl: makeImageBase64UrlfromBuffer(Buffer.from(stampedImageBuffer!)),
         metadata,
         tweetdata,
+        parsedTweetData,
       };
       response.set('Content-Type', 'application/json');
       return response.status(200).send({ ...responseData, jobId: activeJob.id });
