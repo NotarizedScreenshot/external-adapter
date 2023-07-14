@@ -2,6 +2,10 @@ version: "3.9"
 services:
   notaryshot-adapter:
     image: "chainhackers/quantumoracle-adapter:${TAG}"
+    environment:
+      - TWITTER_USER_NAME: "${TWITTER_USER_NAME}"
+      - TWITTER_PASSWORD: "${TWITTER_PASSWORD}"
+      - TWITTER_EMAIL: "${TWITTER_EMAIL}"
     ports:
       - "9000:9000"
     deploy:

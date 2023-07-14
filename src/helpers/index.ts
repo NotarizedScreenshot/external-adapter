@@ -1,3 +1,5 @@
+import path from 'path';
+import fs from 'fs/promises';
 import { spawn } from 'child_process';
 import {
   IMetadata,
@@ -14,6 +16,8 @@ import { Response } from 'express';
 import { createTweetData } from '../models';
 import { io } from '../index';
 import { Socket } from 'socket.io';
+import { processPWD } from '../prestart';
+import { ElementHandle, Page } from 'puppeteer';
 
 export const getIncludeSubstringElementIndex = (
   array: string[],
@@ -133,10 +137,8 @@ export const isValidUint64 = (data: string | number) => {
   return true;
 };
 
-export const makeTweetUrlWithId = (tweetId: string): string =>
-  `https://twitter.com/twitter/status/${tweetId}`;
-
-export const makeImageBase64UrlfromBuffer = (buffer: Buffer, filetype: string = 'png') => {
+export const makeImageBase64UrlfromBuffer = (buffer: Buffer | null, filetype: string = 'png') => {
+  if (!buffer) return null;
   return `data:image/${filetype};base64,` + buffer.toString('base64');
 };
 
@@ -148,97 +150,9 @@ export const getTrustedHashSum = (data: string | Buffer) =>
     sha256(CryptoJS.lib.WordArray.create(data)),
   );
 
-export const getTweetResultsFromTweetRawData = (tweetRawDataString: string, tweetId: string) => {
-  try {
-    const tweetRawDataParsed = JSON.parse(tweetRawDataString);
-    const tweetResponseInstructions =
-      tweetRawDataParsed.data['threaded_conversation_with_injections_v2'].instructions;
-
-    const tweetTimeLineEntries = tweetResponseInstructions.find(
-      (el: any) => el.type === 'TimelineAddEntries',
-    ).entries;
-
-    const tweetEntry = tweetTimeLineEntries.find(
-      (entry: any) => entry.entryId === `tweet-${tweetId}`,
-    );
-
-    return tweetEntry.content.itemContent.tweet_results.result;
-  } catch (error) {
-    console.error(error);
-    return null;
-  }
-};
-
-export const getTweetTimelineEntries = (
-  tweetRawDataString: string | null,
-): ITweetTimelineEntry[] => {
-  try {
-    if (!tweetRawDataString) return [];
-    const tweetRawDataParsed = JSON.parse(tweetRawDataString);
-    const tweetResponseInstructions =
-      tweetRawDataParsed.data['threaded_conversation_with_injections_v2'].instructions;
-
-    const tweetTimeLineEntries: ITweetTimelineEntry[] = tweetResponseInstructions.find(
-      (el: any) => el.type === 'TimelineAddEntries',
-    ).entries;
-    return tweetTimeLineEntries;
-  } catch (error) {
-    console.error(error);
-    return [];
-  }
-};
-
 export const reportError = (message: string, response: Response) => {
   console.error(message);
   return response.status(422).json({ error: 'invalid tweet id' });
-};
-
-export const getTweetDataFromThreadEntry = (entry: IThreadEntry) => {
-  return {
-    entryId: entry.entryId,
-    items: entry.content.items
-      .filter((item: any) => item.item.itemContent.itemType === 'TimelineTweet')
-      .map((item: any) => createTweetData(item.item.itemContent.tweet_results.result)),
-  };
-};
-
-export const getTweetBodyMediaUrls = (tweetdata: ITweetData): string[] => {
-  return tweetdata.body.media
-    ? tweetdata.body.media?.flatMap((media) => {
-        if (media.type === 'video') return [media.src, media.thumb];
-        return media.src;
-      })
-    : [];
-};
-
-export const getThreadsDataToUpload = (threadsData: IThreadData[]): string[] => {
-  return threadsData.flatMap<string>((thread) => {
-    return thread.items.flatMap((tweet: ITweetData) => {
-      const mediaToUpload: string[] = [];
-
-      if (!!tweet.body.card) mediaToUpload.push(tweet.body.card.thumbnail_image_original);
-
-      mediaToUpload.push(tweet.user.profile_image_url_https);
-
-      const mediaUrls = getTweetBodyMediaUrls(tweet);
-
-      return [...mediaToUpload, ...mediaUrls];
-    });
-  });
-};
-
-export const getMediaUrlsToUpload = (tweet: ITweetData): string[] => {
-  const mediaToUpload: string[] = [];
-
-  if (!!tweet.body.card?.thumbnail_image_original)
-    mediaToUpload.push(tweet.body.card.thumbnail_image_original);
-  if (!!tweet.body.card?.player_image_original)
-    mediaToUpload.push(tweet.body.card.player_image_original);
-  if (!!tweet.user.profile_image_url_https) mediaToUpload.push(tweet.user.profile_image_url_https);
-
-  const mediaUrls = getTweetBodyMediaUrls(tweet);
-
-  return [...mediaToUpload, ...mediaUrls];
 };
 
 export const getSocketByUserId = (userId: string): Socket | null => {
@@ -253,3 +167,43 @@ export const getSocketByUserId = (userId: string): Socket | null => {
 
 export const randomInt = (min: number, max: number): number =>
   Math.floor(Math.random() * (max - min + 1) + min);
+
+export const getSavedCookies = (): Promise<
+  { name: string; value: string; [id: string]: string | number | boolean }[] | null
+> =>
+  fs
+    .readFile(path.resolve(processPWD, 'data', 'cookies.json'), 'utf-8')
+    .then((cockiesString) => JSON.parse(cockiesString))
+    .catch((error) => {
+      console.error('getSavedCookies error: ', error.message);
+      return null;
+    });
+
+export const findElementByTextContentAsync = async (
+  elements: ElementHandle[],
+  textValue: string,
+): Promise<ElementHandle | null> => {
+  for (let i = 0; i < elements.length; i += 1) {
+    const property = await elements[i].getProperty('textContent');
+    const value = await property.jsonValue();
+    if (value?.toLocaleLowerCase() === textValue.toLocaleLowerCase()) return elements[i];
+  }
+  return null;
+};
+
+export const waitForSelectorWithTimeout = async (
+  page: Page,
+  selector: string,
+  timeout: number = 5000,
+): Promise<ElementHandle | null> => {
+  try {
+    return await page.waitForSelector(selector, {
+      timeout,
+    });
+  } catch (error) {
+    console.log(`Can not get selector: ${selector}, exceed timeout ${timeout} ms`);
+    return null;
+  }
+};
+
+export * from './twitterUtils';

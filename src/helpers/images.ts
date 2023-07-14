@@ -10,8 +10,9 @@ import {
   WATERMARK_IMAGE_PATH,
 } from '../config';
 
-export const makeStampedImage = async (srcImgPath: string | Buffer) => {
+export const makeStampedImage = async (srcImgPath: string | Buffer | null) => {
   try {
+    if (!srcImgPath) return null;
     const screenshotImage = await loadImage(srcImgPath);
 
     const canvas = createCanvas(screenshotImage.width, screenshotImage.height);
@@ -43,7 +44,8 @@ export const makeStampedImage = async (srcImgPath: string | Buffer) => {
   }
 };
 
-export const makeBufferFromBase64ImageUrl = (imgageUrl: string): Buffer => {
+export const makeBufferFromBase64ImageUrl = (imgageUrl: string | null): Buffer | null => {
+  if (!imgageUrl) return null;
   const clearUrl = imgageUrl.includes('data:image/png;base64,')
     ? imgageUrl.replace('data:image/png;base64,', '')
     : imgageUrl;

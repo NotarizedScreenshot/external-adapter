@@ -1,16 +1,11 @@
 import fs from 'fs/promises';
 import path from 'path';
 import axios from 'axios';
-import Queue, { QueueOptions } from 'bull';
+import Queue from 'bull';
 import { processPWD } from '../prestart';
-import {
-  getSocketByUserId,
-  getTweetTimelineEntries,
-  metadataCidPathFromTweetId,
-  metadataToAttirbutes,
-} from '../helpers';
+import { getSocketByUserId, metadataCidPathFromTweetId, metadataToAttirbutes } from '../helpers';
 import { uploadToCAS } from '../helpers/nftStorage';
-import { ITweetTimelineEntry, IUploadJobData } from '../types';
+import { IUploadJobData } from '../types';
 import { NFTStorage } from 'nft.storage';
 import { createMoment, createNftDescription, createNftName, createTweetData } from '../models';
 
@@ -35,6 +30,7 @@ uploadQueue.process(async (job) => {
     stampedImageBuffer,
     mediaUrls,
     userId,
+    parsedTweetData,
   } = job.data;
 
   const client = new NFTStorage({ token: process.env.NFT_STORAGE_TOKEN! });
@@ -75,18 +71,14 @@ uploadQueue.process(async (job) => {
   const metadataToSaveCid = await uploadToCAS(JSON.stringify(metadataToSave), client);
   job.progress(90);
 
-  const tweetEntry: ITweetTimelineEntry = getTweetTimelineEntries(tweetdata).find(
-    (entry) => entry.entryId === `tweet-${tweetId}`,
-  )!;
-
-  const tweetData = createTweetData(tweetEntry.content.itemContent.tweet_results.result);
-
-  const author = tweetData?.user.screen_name ? tweetData?.user.screen_name : 'unknown autor';
+  const author = parsedTweetData?.user.screen_name
+    ? parsedTweetData?.user.screen_name
+    : 'unknown autor';
 
   const ts = Date.now();
   const moment = createMoment(ts);
   const name = createNftName(tweetId, moment);
-  const image = 'ipfs://' + screenshotCid;
+  const image = 'ipfs://' + stampedScreenShotCid;
   const time = new Date(ts).toUTCString();
 
   const description = createNftDescription(tweetId, author, moment);
